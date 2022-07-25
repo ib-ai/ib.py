@@ -1,5 +1,9 @@
 {
   "token": "",
   "prefix": "",
-  "description": ""
+  "description": "",
+  "db_host": "",
+  "db_user": "",
+  "db_database": "",
+  "db_password": ""
 }
