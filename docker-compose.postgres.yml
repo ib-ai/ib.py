@@ -1,0 +1,43 @@
+version: "3.4"
+
+services:
+  # Can comment out the following when working in development instead of rerunning the docker environment again
+
+  # bot:
+  #   image: ib.ai
+  #   restart: on-failure:3
+  #   build:
+  #     context: ./
+  #     dockerfile: Dockerfile
+  #   depends_on:
+  #     - postgredb
+
+  postgredb:
+    restart: always
+    image: postgres
+    volumes:
+      - postgre-data:/data
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=password
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=eebo@example.com
+      - PGADMIN_DEFAULT_PASSWORD=password
+      - PGADMIN_LISTEN_PORT=80
+    ports:
+      - "80:80"
+    volumes:
+      - pgadmin-data:/data
+    tty: true
+    links:
+      - "postgredb:pgsql-server"
+
+volumes:
+  # Database persistence
+  postgre-data:
+  pgadmin-data:
