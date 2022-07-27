@@ -1,8 +1,8 @@
 from discord.ext import commands
-from discord.utils import get
 import discord
 
 from db.models import StaffMonitorMessage, StaffMonitorUser
+from pagination.pagination import Pagination
 from utils.ucommand import reply_unknown_syntax
 from utils.uguild import get_guild_data, mods_or_manage_guild
 
@@ -77,6 +77,7 @@ class Monitor(commands.Cog):
         await ctx.send(reply_unknown_syntax(ctx.command))
     
     @user.command(name='create', aliases=['add'])
+    @mods_or_manage_guild()
     @commands.guild_only()
     async def user_create(self, ctx: commands.Context, user: discord.Member):
         try:
@@ -94,6 +95,7 @@ class Monitor(commands.Cog):
         await ctx.send("{} has been successfully added to monitor.".format(user.mention))
     
     @user.command(name='remove', aliases=['delete'])
+    @mods_or_manage_guild()
     @commands.guild_only()
     async def user_remove(self, ctx: commands.Context, user: discord.Member):
         try:
@@ -116,6 +118,7 @@ class Monitor(commands.Cog):
         await ctx.send(reply_unknown_syntax(ctx.command))
     
     @message.command(name='create', aliases=['add'])
+    @mods_or_manage_guild()
     @commands.guild_only()
     async def message_create(self, ctx: commands.Context, *, pattern: str):
         try:
@@ -133,6 +136,7 @@ class Monitor(commands.Cog):
         await ctx.send("The pattern (`{}`) has been successfully added to monitor.".format(pattern))
     
     @message.command(name='remove', aliases=['delete'])
+    @mods_or_manage_guild()
     @commands.guild_only()
     async def message_remove(self, ctx: commands.Context, *, pattern: str):
         try:
@@ -147,6 +151,34 @@ class Monitor(commands.Cog):
             print(e)
 
         await ctx.send("The pattern (`{}`) has been successfully removed from monitor.".format(pattern))
+
+    @monitor.command()
+    @mods_or_manage_guild()
+    @commands.guild_only()
+    async def cleanup(self, ctx: commands.Context):
+        monitor_users = await StaffMonitorUser.query.gino.all()
+        guild_members = [member.id for member in ctx.guild.members]
+        users_removed = 0
+
+        for user in monitor_users:
+            if user.user_id not in guild_members:
+                await user.delete()
+                users_removed += 1
+            
+        await ctx.send("{} user(s) were removed from monitor.".format(users_removed))
+    
+    @monitor.command()
+    @mods_or_manage_guild()
+    @commands.guild_only()
+    async def list(self, ctx: commands.Context):
+        monitor_users = [user.user_id for user in await StaffMonitorUser.query.gino.all()]
+
+        formatted_users = await formatted_user_monitor(ctx.guild, monitor_users)
+        formatted_messages = ["Regex: {}".format(pattern.message) for pattern in await StaffMonitorMessage.query.gino.all()]
+
+        monitor_embed = Pagination(ctx, "Here is a list of entries.", formatted_users + formatted_messages, 10)
+
+        await monitor_embed.send_paginated_embed()
     
     async def cog_command_error(self, ctx, error: commands.CommandError):
         # ! More robust error checking
@@ -154,3 +186,18 @@ class Monitor(commands.Cog):
 
 def setup(bot: commands.Bot):
     bot.add_cog(Monitor(bot))
+
+async def formatted_user_monitor(guild: discord.Guild, monitored_users):
+    formatted_users = []
+
+    for user_id in monitored_users:
+        formatted = "User: {}".format(user_id)
+
+        member = guild.get_member(user_id)
+
+        if member:
+            formatted = "{} ({})".format(formatted, member)
+        
+        formatted_users.append(formatted)
+    
+    return formatted_users
