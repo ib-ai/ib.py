@@ -20,6 +20,10 @@ class MessageListener(commands.Cog):
     
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
+        # Ignore embeds
+        if not after.content:
+            return
+
         author = "{} edited in #{}".format(before.author, before.channel)
 
         log_channel = before.guild.get_channel(await get_guild_data(before.guild, "logs_id"))
