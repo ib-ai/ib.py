@@ -1,5 +1,7 @@
+import re
 from discord.ext import commands
 import discord
+from db.models import StaffTag
 
 from utils.uguild import get_guild_data
 
@@ -17,9 +19,29 @@ class MessageListener(commands.Cog):
         # No handling for DMs right now
         if message.guild is None and not message.author.bot:
             return
+        
+        # TODO Disable Reply
+
+        # TODO Repeat messages
+        # ! Only get non-disabled ones
+
+        tags = [tag for tag in await StaffTag.query.gino.all()]
+
+        for tag in tags:
+            if tag.disabled:
+                pass
+
+            if re.search(tag.trigger, message.content, re.IGNORECASE):
+                try:
+                    await message.channel.send(tag.output)
+                except Exception as e:
+                    await message.channel.send("Oh dear. Something went wrong. Ping a dev with this: {}".format(e))
+
     
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
+        # TODO Include images/attachments
+
         # Ignore embeds
         if not after.content:
             return
@@ -42,6 +64,8 @@ class MessageListener(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message):
+        # TODO Include images/attachments
+        
         author = "{} deleted in #{}".format(message.author, message.channel)
 
         log_channel = message.guild.get_channel(await get_guild_data(message.guild, "logs_id"))
@@ -56,5 +80,5 @@ class MessageListener(commands.Cog):
 
         await log_channel.send(embed=embed)
 
-def setup(bot: commands.Bot):
-    bot.add_cog(MessageListener(bot))
+async def setup(bot: commands.Bot):
+    await bot.add_cog(MessageListener(bot))

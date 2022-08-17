@@ -44,19 +44,12 @@ class GuildData(db.Model):
     monitor_user_log_id = db.Column(db.BigInteger())
     monitor_message_log_id = db.Column(db.BigInteger())
 
-class GuildFilter(db.Model):
-    __tablename__ = "filter"
-    __table_args__ = {"schema": "guild"}
-
-    filter_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    trigger = db.Column(db.Text())
-    notify = db.Column(db.Boolean())
-
 class GuildSnapshot(db.Model):
     __tablename__ = "snapshot"
     __table_args__ = {"schema": "guild"}
 
-    category_id = db.Column(db.BigInteger(), primary_key=True, autoincrement=False)
+    snapshot_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
+    category_id = db.Column(db.BigInteger())
     channel_type = db.Column(db.Enum(ChannelType, schema="guild"))
     channel_list = db.Column(db.ARRAY(db.BigInteger()))
 
@@ -110,7 +103,7 @@ class StaffTag(db.Model):
     tag_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
     trigger = db.Column(db.Text())
     output = db.Column(db.Text())
-    disabled = db.Column(db.Boolean())
+    disabled = db.Column(db.Boolean(), default=False)
 
 class StaffNote(db.Model):
     __tablename__ = "note"
@@ -135,6 +128,14 @@ class StaffMonitorMessage(db.Model):
 
     monitor_message_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
     message = db.Column(db.Text())
+
+class StaffFilter(db.Model):
+    __tablename__ = "filter"
+    __table_args__ = {"schema": "staff"}
+
+    filter_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
+    trigger = db.Column(db.Text())
+    notify = db.Column(db.Boolean(), default=False)
 
 class StaffReaction(db.Model):
     __tablename__ = "reaction"
