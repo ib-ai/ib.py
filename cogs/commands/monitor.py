@@ -4,7 +4,7 @@ import discord
 from db.models import StaffMonitorMessage, StaffMonitorUser
 from pagination.pagination import Pagination
 from utils.ucommand import reply_unknown_syntax
-from utils.uguild import get_guild_data, mods_or_manage_guild
+from utils.uguild import assert_regex, get_guild_data, mods_or_manage_guild
 
 class Monitor(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -121,6 +121,8 @@ class Monitor(commands.Cog):
     @mods_or_manage_guild()
     @commands.guild_only()
     async def message_create(self, ctx: commands.Context, *, pattern: str):
+        assert_regex(pattern)
+        
         try:
             monitored_message = await StaffMonitorMessage.query.where(StaffMonitorMessage.message == pattern).gino.first()
 
@@ -176,7 +178,7 @@ class Monitor(commands.Cog):
         formatted_users = await formatted_user_monitor(ctx.guild, monitor_users)
         formatted_messages = ["Regex: {}".format(pattern.message) for pattern in await StaffMonitorMessage.query.gino.all()]
 
-        monitor_embed = Pagination(ctx, "Here is a list of entries.", formatted_users + formatted_messages, 10)
+        monitor_embed = Pagination(ctx, formatted_users + formatted_messages, "Here is a list of entries.", 10)
 
         await monitor_embed.send_paginated_embed()
     
@@ -184,8 +186,8 @@ class Monitor(commands.Cog):
         # ! More robust error checking
         await ctx.send(error)
 
-def setup(bot: commands.Bot):
-    bot.add_cog(Monitor(bot))
+async def setup(bot: commands.Bot):
+    await bot.add_cog(Monitor(bot))
 
 async def formatted_user_monitor(guild: discord.Guild, monitored_users):
     formatted_users = []

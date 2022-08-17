@@ -5,7 +5,7 @@ from db.models import StaffMonitorMessage, StaffMonitorUser
 
 from utils.uguild import get_guild_data
 
-class MessageListener(commands.Cog):
+class MonitorListener(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
     
@@ -20,6 +20,13 @@ class MessageListener(commands.Cog):
             return
         
         # ! Add check for config for NSA Deny List
+
+        # Do not trigger if command
+
+        ctx = await self.bot.get_context(message)
+
+        if ctx.valid:
+            return
 
         guild_data = await get_guild_data(message.guild)
 
@@ -40,7 +47,7 @@ class MessageListener(commands.Cog):
             if not pattern:
                 return
             
-            if re.search(pattern, message.content):
+            if re.search(pattern, message.content, re.IGNORECASE):
                 await log_suspicious_message(guild_data.monitor_message_log_id, message)
                 return
 
@@ -59,5 +66,5 @@ async def log_suspicious_message(channel: int, message: discord.Message):
 
     await monitor_channel.send(embed=embed)
 
-def setup(bot: commands.Bot):
-    bot.add_cog(MessageListener(bot))
+async def setup(bot: commands.Bot):
+    await bot.add_cog(MonitorListener(bot))
