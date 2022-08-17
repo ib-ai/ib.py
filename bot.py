@@ -35,7 +35,7 @@ async def on_ready():
     for folder, _, files in os.walk('./cogs'):
         for filename in files:
             if filename.endswith('.py'):
-                bot.load_extension(os.path.join(folder, filename).replace('\\', '.').replace('/', '.')[2:-3])
+                await bot.load_extension(os.path.join(folder, filename).replace('\\', '.').replace('/', '.')[2:-3])
     
     logger.info("Loaded all cogs.")
 
