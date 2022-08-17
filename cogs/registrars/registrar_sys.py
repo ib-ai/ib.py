@@ -139,5 +139,5 @@ class RegistrarSys(commands.Cog):
         else:
             await ctx.send(error)
         
-def setup(bot: commands.Bot):
-    bot.add_cog(RegistrarSys(bot))
+async def setup(bot: commands.Bot):
+    await bot.add_cog(RegistrarSys(bot))

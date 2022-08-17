@@ -28,5 +28,5 @@ class RegistrarUtils(commands.Cog):
 
         await ctx.channel.send(embed=embed)
         
-def setup(bot: commands.Bot):
-    bot.add_cog(RegistrarUtils(bot))
+async def setup(bot: commands.Bot):
+    await bot.add_cog(RegistrarUtils(bot))
