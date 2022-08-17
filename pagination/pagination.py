@@ -2,8 +2,10 @@ import discord
 from discord.ext import commands
 import asyncio
 
+from utils.uguild import truncate
+
 class Pagination():
-    def __init__(self, ctx: commands.Context, description, entries, step = 10):
+    def __init__(self, ctx: commands.Context, entries, description = "", step = 10):
         self.ctx = ctx
         self.entries = entries
         self.description = description
@@ -11,6 +13,7 @@ class Pagination():
         self.embeds = []
     
     def build_field(self, embed: discord.Embed, index, value):
+        value = truncate(value, 512)
         embed.add_field(name="Entry #{}".format(index), value=value, inline=False)
 
     def build_embed(self):
@@ -20,7 +23,7 @@ class Pagination():
             if index != 0 and index % self.step == 0:
                 self.embeds.append(embed)
                 embed = discord.Embed(description=self.description)
-
+            
             self.build_field(embed, index + 1, value)
 
         self.embeds.append(embed)
@@ -29,11 +32,19 @@ class Pagination():
             selected_embed.set_footer(text="Page {}/{}".format(index + 1, len(self.embeds)))
 
     async def send_paginated_embed(self):
+        if not self.entries:
+            no_data_embed = discord.Embed(description="No data available.")
+            await self.ctx.send(embed=no_data_embed)
+            return
+
         self.build_embed()
 
         buttons = [u"\u23EA", u"\u2B05", u"\u27A1", u"\u23E9"]
         current = 0
         message = await self.ctx.send(embed=self.embeds[current])
+
+        if len(self.embeds) < 2: # Don't add reactions if there's only one embed
+            return
         
         for button in buttons:
             await message.add_reaction(button)
