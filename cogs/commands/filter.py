@@ -94,9 +94,9 @@ class Filter(commands.Cog):
     async def list(self, ctx: commands.Context):
         formatted_messages = [pattern.trigger for pattern in await StaffFilter.query.gino.all()]
 
-        filter_embed = Pagination(ctx, formatted_messages, "Here is a list of entries.", 10)
+        filter_embed, filter_view = Pagination(ctx, formatted_messages, "Here is a list of entries.", 10).return_paginated_embed()
 
-        await filter_embed.send_paginated_embed()
+        await ctx.send(embed=filter_embed, view=filter_view)
     
     async def cog_command_error(self, ctx, error: commands.CommandError):
         # ! More robust error checking

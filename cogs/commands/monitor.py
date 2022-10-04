@@ -178,9 +178,9 @@ class Monitor(commands.Cog):
         formatted_users = await formatted_user_monitor(ctx.guild, monitor_users)
         formatted_messages = ["Regex: {}".format(pattern.message) for pattern in await StaffMonitorMessage.query.gino.all()]
 
-        monitor_embed = Pagination(ctx, formatted_users + formatted_messages, "Here is a list of entries.", 10)
+        monitor_embed, monitor_view = Pagination(ctx, formatted_users + formatted_messages, "Here is a list of entries.", 10).return_paginated_embed()
 
-        await monitor_embed.send_paginated_embed()
+        await ctx.send(embed=monitor_embed, view=monitor_view)
     
     async def cog_command_error(self, ctx, error: commands.CommandError):
         # ! More robust error checking

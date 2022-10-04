@@ -1,16 +1,60 @@
+from typing import Tuple
 import discord
 from discord.ext import commands
-import asyncio
+from discord import ui
 
 from utils.uguild import truncate
 
-class Pagination():
+class Pagination(ui.View):
     def __init__(self, ctx: commands.Context, entries, description = "", step = 10):
+        super().__init__(timeout = 60)
         self.ctx = ctx
         self.entries = entries
         self.description = description
         self.step = step
         self.embeds = []
+        self.current_page = 0
+
+    @ui.button(emoji=u"\u23EA", style=discord.ButtonStyle.blurple)
+    async def first_page(self, interaction: discord.Interaction, button):
+        self.current_page = 0
+        await self.update_page(interaction)
+    
+    @ui.button(emoji=u"\u2B05", style=discord.ButtonStyle.blurple)
+    async def before_page(self, interaction: discord.Interaction, button):
+        if self.current_page > 0:
+            self.current_page -= 1
+            await self.update_page(interaction)
+    
+    @ui.button(emoji=u"\u27A1", style=discord.ButtonStyle.blurple)
+    async def next_page(self, interaction: discord.Interaction, button):
+        if self.current_page < len(self.embeds) - 1:
+            self.current_page += 1
+            await self.update_page(interaction)
+    
+    @ui.button(emoji=u"\u23E9", style=discord.ButtonStyle.blurple)
+    async def last_page(self, interaction: discord.Interaction, button):
+        self.current_page = len(self.embeds) - 1
+        await self.update_page(interaction)
+    
+    async def update_page(self, interaction: discord.Interaction):
+        if self.current_page == 0:
+            self.children[0].disabled = True
+            self.children[1].disabled = True
+            self.children[-1].disabled = False
+            self.children[-2].disabled = False
+        elif self.current_page == len(self.embeds) - 1:
+            self.children[0].disabled = False
+            self.children[1].disabled = False
+            self.children[-1].disabled = True
+            self.children[-2].disabled = True
+        else:
+            for i in self.children: i.disabled = False
+
+        await interaction.response.edit_message(
+            embed = self.embeds[self.current_page],
+            view = self
+        )
     
     def build_field(self, embed: discord.Embed, index, value):
         value = truncate(value, 512)
@@ -31,52 +75,17 @@ class Pagination():
         for index, selected_embed in enumerate(self.embeds):
             selected_embed.set_footer(text="Page {}/{}".format(index + 1, len(self.embeds)))
 
-    async def send_paginated_embed(self):
+    async def return_paginated_embed(self) -> Tuple[discord.Embed, discord.ui.View | None]:
         if not self.entries:
             no_data_embed = discord.Embed(description="No data available.")
-            await self.ctx.send(embed=no_data_embed)
-            return
+            return [no_data_embed, None]
 
         self.build_embed()
 
-        buttons = [u"\u23EA", u"\u2B05", u"\u27A1", u"\u23E9"]
-        current = 0
-        message = await self.ctx.send(embed=self.embeds[current])
-
         if len(self.embeds) < 2: # Don't add reactions if there's only one embed
-            return
-        
-        for button in buttons:
-            await message.add_reaction(button)
-            
-        while True:
-            try:
-                reaction, user = await self.ctx.bot.wait_for("reaction_add", check=lambda reaction, user: user == self.ctx.author and reaction.emoji in buttons, timeout=60.0)
+            for i in self.children:
+                i.disabled = True
 
-            except asyncio.TimeoutError:
-                await message.clear_reactions()
+        return self.embeds[self.current_page], self
 
-                timed_out_embed = discord.Embed(description="Embed has timed out.")
-                await message.edit(embed=timed_out_embed)
-
-            else:
-                previous_page = current
-                if reaction.emoji == u"\u23EA":
-                    current = 0
-                    
-                elif reaction.emoji == u"\u2B05":
-                    if current > 0:
-                        current -= 1
-                        
-                elif reaction.emoji == u"\u27A1":
-                    if current < len(self.embeds)-1:
-                        current += 1
-
-                elif reaction.emoji == u"\u23E9":
-                    current = len(self.embeds) - 1
-
-                for button in buttons:
-                    await message.remove_reaction(button, self.ctx.author)
-
-                if current != previous_page:
-                    await message.edit(embed=self.embeds[current])
+       

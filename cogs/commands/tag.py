@@ -94,9 +94,9 @@ class Tag(commands.Cog):
 
         # TODO Add truncation
 
-        tag_embed = TagFindPagination(ctx, formatted_tags, step = 1)
+        tag_embed, tag_view = TagFindPagination(ctx, formatted_tags, step = 1).return_paginated_embed()
 
-        await tag_embed.send_paginated_embed()
+        await ctx.send(embed=tag_embed, view=tag_view)
 
     @tag.command(name='list')
     @commands.guild_only()
@@ -109,9 +109,9 @@ class Tag(commands.Cog):
                 "value": tag.output,
             })
 
-        tag_embed = TagListPagination(ctx, tags, "Here is a list of tags.", 10)
+        tag_embed, tag_view = TagListPagination(ctx, tags, "Here is a list of tags.", 10).return_paginated_embed()
 
-        await tag_embed.send_paginated_embed()
+        await ctx.send(embed=tag_embed, view=tag_view)
     
     async def cog_command_error(self, ctx, error: commands.CommandError):
         # ! More robust error checking
