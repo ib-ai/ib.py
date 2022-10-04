@@ -1,11 +1,13 @@
+from datetime import datetime
 import json
 import os
 
 import discord
 from discord.ext import commands
 import logging
+from cogs.commands.reminder import schedule_reminder
 
-from db.models import db_main
+from db.models import MemberReminder, db_main
 
 with open('./config.json', 'r') as config_json:
     config = json.load(config_json)
@@ -60,9 +62,23 @@ class IBpy(commands.Bot):
         for folder, _, files in os.walk('./cogs'):
             for filename in files:
                 if filename.endswith('.py'):
-                    await bot.load_extension(os.path.join(folder, filename).replace('\\', '.').replace('/', '.')[2:-3])
+                    try:
+                        await bot.load_extension(os.path.join(folder, filename).replace('\\', '.').replace('/', '.')[2:-3])
+                    except commands.errors.NoEntryPointError as e:
+                        # ! Remove before push
+                        print(e)
+                        pass
         
         logger.info("Loaded all cogs.")
+
+        date_now = datetime.utcnow()
+        reminders_list = await MemberReminder.query.where(MemberReminder.time > date_now).gino.all()
+
+        for reminder in reminders_list:
+            user = bot.get_user(reminder.user_id)
+            await schedule_reminder(user, reminder.time, reminder.text)
+        
+        logger.info("Scheduled all reminders.")
 
 bot = IBpy()
 
