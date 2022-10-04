@@ -16,7 +16,10 @@ class MonitorListener(commands.Cog):
             message (discord.Message): The current message.
         """
 
-        if message.guild is None and not message.author.bot:
+        if message.guild is None:
+            return
+
+        if message.author.bot:
             return
         
         # ! Add check for config for NSA Deny List

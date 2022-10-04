@@ -17,7 +17,10 @@ class MessageListener(commands.Cog):
         """
 
         # No handling for DMs right now
-        if message.guild is None and not message.author.bot:
+        if message.guild is None:
+            return
+
+        if message.author.bot:
             return
         
         # TODO Disable Reply
