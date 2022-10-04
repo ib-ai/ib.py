@@ -2,6 +2,7 @@
   "token": "",
   "prefix": "",
   "description": "",
+  "application_id": 0,
   "db_host": "",
   "db_user": "",
   "db_database": "",
