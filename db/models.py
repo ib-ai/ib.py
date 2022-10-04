@@ -1,6 +1,7 @@
 import json
 import enum
 from gino import Gino
+from sqlalchemy.sql import func
 
 db = Gino()
 
@@ -75,7 +76,7 @@ class GuildVoteLadder(db.Model):
 
     ladder_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
     ladder_label = db.Column(db.Text())
-    ladder_roles = db.Column(db.ARRAY(db.BigInteger()))
+    ladder_role = db.Column(db.BigInteger())
     channel_id = db.Column(db.Text())
     threshold = db.Column(db.Integer())
     minimum = db.Column(db.Integer())
@@ -86,12 +87,12 @@ class GuildVote(db.Model):
     __table_args__ = {"schema": "guild"}
 
     vote_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    ladder_number = db.Column(db.Integer())
+    message_id = db.Column(db.BigInteger())
     message = db.Column(db.Text())
     positive = db.Column(db.Integer(), unique=False, default=0)
     negative = db.Column(db.Integer(), unique=False, default=0)
-    expiry = db.Column(db.Integer())
-    finished = db.Column(db.Boolean())
+    expiry = db.Column(db.Integer(), default = 604800) # 1 week in seconds
+    finished = db.Column(db.Boolean(), default = False)
     ladder_id = db.Column(db.Integer(), db.ForeignKey(GuildVoteLadder.ladder_id))
 
 # Staff Tables
@@ -112,7 +113,7 @@ class StaffNote(db.Model):
     note_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
     user_id = db.Column(db.BigInteger())
     author_id = db.Column(db.BigInteger())
-    timestamp = db.Column(db.TIMESTAMP())
+    timestamp = db.Column(db.DateTime(), default=func.now())
     data = db.Column(db.Text())
 
 class StaffMonitorUser(db.Model):
@@ -144,15 +145,27 @@ class StaffReaction(db.Model):
     reaction_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
     channel_id = db.Column(db.BigInteger())
     message_id = db.Column(db.BigInteger())
-    emoji_id = db.Column(db.BigInteger())
 
 class StaffReactionRole(db.Model):
     __tablename__ = "reaction_role"
     __table_args__ = {"schema": "staff"}
 
     reaction_role_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
+    emoji_id = db.Column(db.BigInteger())
+    label = db.Column(db.Text())
+    description = db.Column(db.Text(), default="")
     role_id = db.Column(db.BigInteger())
-    positive = db.Column(db.Boolean())
+    positive = db.Column(db.Boolean(), default=False)
+    reaction_id = db.Column(db.Integer(), db.ForeignKey(StaffReaction.reaction_id))
+
+class StaffButtonRole(db.Model):
+    __tablename__ = "button_role"
+    __table_args__ = {"schema": "staff"}
+
+    button_role_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
+    emoji_id = db.Column(db.BigInteger())
+    label = db.Column(db.Text())
+    role_ids = db.Column(db.ARRAY(db.BigInteger()))
     reaction_id = db.Column(db.Integer(), db.ForeignKey(StaffReaction.reaction_id))
 
 class StaffPunishment(db.Model):
@@ -160,7 +173,6 @@ class StaffPunishment(db.Model):
     __table_args__ = {"schema": "staff"}
 
     punishment_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    case_id = db.Column(db.Integer())
     punishment_type = db.Column(db.Enum(PunishmentType, schema="staff"))
     user_display = db.Column(db.Text())
     user_id = db.Column(db.BigInteger())
@@ -170,7 +182,7 @@ class StaffPunishment(db.Model):
     redacted = db.Column(db.Boolean())
     message_id = db.Column(db.BigInteger())
     message_staff_id = db.Column(db.BigInteger())
-    expiry = db.Column(db.Integer())
+    expiry = db.Column(db.DateTime())
 
 # Helper Tables
 
@@ -221,7 +233,7 @@ class MemberReminder(db.Model):
 
     reminder_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
     text = db.Column(db.Text())
-    time = db.Column(db.Integer())
+    time = db.Column(db.DateTime())
     user_id = db.Column(db.BigInteger())
 
 async def db_main():
