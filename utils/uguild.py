@@ -12,8 +12,8 @@ async def get_guild_data(guild: discord.Guild, prop: str = None) -> GuildData:
     return getattr(guild_data, prop) if prop else guild_data
 
 def mods_or_manage_guild():
-    def predicate(ctx):
-        moderator_role_id = get_guild_data(ctx.guild, "moderator_id")
+    async def predicate(ctx):
+        moderator_role_id = await get_guild_data(ctx.guild, "moderator_id")
         return commands.check_any(commands.has_guild_permissions(manage_guild=True), commands.has_role(moderator_role_id))
     return commands.check(predicate)
 
