@@ -1,3 +1,7 @@
+import contextlib
+import io
+import textwrap
+from typing import Literal, Optional
 from discord.ext import commands
 import discord
 
@@ -7,6 +11,39 @@ from utils.uguild import get_guild_data
 class RegistrarSys(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+    
+    @commands.command()
+    @commands.has_guild_permissions(manage_guild=True)
+    @commands.guild_only()
+    async def sync(self, ctx: commands.Context, guilds: commands.Greedy[discord.Object], spec: Optional[Literal["~", "*", "^"]] = None) -> None:
+            if not guilds:
+                if spec == "~":
+                    synced = await ctx.bot.tree.sync(guild=ctx.guild)
+                elif spec == "*":
+                    ctx.bot.tree.copy_global_to(guild=ctx.guild)
+                    synced = await ctx.bot.tree.sync(guild=ctx.guild)
+                elif spec == "^":
+                    ctx.bot.tree.clear_commands(guild=ctx.guild)
+                    await ctx.bot.tree.sync(guild=ctx.guild)
+                    synced = []
+                else:
+                    synced = await ctx.bot.tree.sync()
+
+                await ctx.send(
+                    f"Synced {len(synced)} commands {'globally' if spec is None else 'to the current guild.'}"
+                )
+                return
+
+            ret = 0
+            for guild in guilds:
+                try:
+                    await ctx.bot.tree.sync(guild=guild)
+                except discord.HTTPException:
+                    pass
+                else:
+                    ret += 1
+
+            await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
     
     # Channels
     
@@ -115,22 +152,45 @@ class RegistrarSys(commands.Cog):
         mod_role = f"`{ctx.guild.get_role(guild_data.moderator_id).name}`" if guild_data.moderator_id else "`None`"
         helper_role = f"`{ctx.guild.get_role(guild_data.helper_id).name}`" if guild_data.helper_id else "`None`"
 
-        guild_value_message = """**Guild Data for {}**
+        guild_value_message = "**Guild Data for {}**\n**Prefix:** {}\n**Server Modlog:** {}\n**Staff Modlog:** {}\n" \
+            "**Updates:** {}\n**Logs:** {}\n**Mute:** {}\n**Moderator Role:** {}\n**Helper Role:** {}\n" \
+            "**Monitor User Channel:** {}\n**Monitor Message Channel:** {}" \
+            .format(ctx.guild, prefix, modlog_channel, modlog_staff_channel, updates_channel, logs_channel, mute_role, mod_role, helper_role, monitor_user_channel, monitor_message_channel)
 
-        **Prefix:** {}
-        **Server Modlog:** {}
-        **Staff Modlog:** {}
-        **Updates:** {}
-        **Logs:** {}
-        **Mute:** {}
-        **Moderator Role:** {}
-        **Helper Role:** {}
-        **Monitor User Channel:** {}
-        **Monitor Message Channel:** {}
-        """.format(ctx.guild, prefix, modlog_channel, modlog_staff_channel, updates_channel, logs_channel, mute_role, mod_role, helper_role, monitor_user_channel, monitor_message_channel)
+        await ctx.send(guild_value_message)
 
-        await ctx.send(guild_value_message)        
+    # TODO Eval  
+    @commands.command()
+    @commands.has_guild_permissions(manage_guild=True)
+    @commands.guild_only()
+    async def eval(self, ctx: commands.Context, *, code: str):
+        code = clean_code(code)
 
+        local_variables = {
+            "discord": discord,
+            "commands": commands,
+            "bot": self.bot,
+            "ctx": ctx,
+            "channel": ctx.channel,
+            "author": ctx.author,
+            "guild": ctx.guild,
+            "message": ctx.message
+        }
+
+        stdout = io.StringIO()
+
+        try:
+            with contextlib.redirect_stdout(stdout):
+                exec(
+                    f"async def func():\n{textwrap.indent(code, '    ')}", local_variables,
+                )
+
+                obj = await local_variables["func"]()
+                result = f"{stdout.getvalue()}\n-- {obj}\n"
+        except Exception as e:
+            raise RuntimeError(e)
+        
+        await ctx.send(result[0:2000])
     
     async def cog_command_error(self, ctx, error: commands.CommandError):
         # ! More robust error checking
@@ -138,6 +198,12 @@ class RegistrarSys(commands.Cog):
             await ctx.send(error)
         else:
             await ctx.send(error)
+
+def clean_code(content: str):
+    if content.startswith("```") and content.endswith("```"):
+        return "\n".join(content.split("\n")[1:][:-3])
+    else:
+        return content
         
 async def setup(bot: commands.Bot):
     await bot.add_cog(RegistrarSys(bot))
