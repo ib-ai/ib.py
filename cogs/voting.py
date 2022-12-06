@@ -31,14 +31,14 @@ class Voting(commands.Cog):
         """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @voteladder.command()
+    @voteladder.command(aliases=['add'])
     async def create(self, ctx: commands.Context):
         """
         Create a voteladder.
         """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @voteladder.command()
+    @voteladder.command(aliases=['delete'])
     async def delete(self, ctx: commands.Context):
         """
         Delete a voteladder.

@@ -17,14 +17,14 @@ class Updates(commands.Cog):
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @update.command()
+    @update.command(aliases=['add'])
     async def create(self, ctx: commands.Context):
         """
         Create an update entry.
         """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @update.command()
+    @update.command(aliases=['remove'])
     async def delete(self, ctx: commands.Context):
         """
         Delete an update entry.

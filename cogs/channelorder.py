@@ -6,7 +6,7 @@ class ChannelOrder(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
     
-    @commands.group()
+    @commands.group(aliases=['co'])
     async def channelorder(self, ctx: commands.Context):
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
@@ -17,7 +17,7 @@ class ChannelOrder(commands.Cog):
         """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @channelorder.command()
+    @channelorder.command(aliases=['r'])
     async def rollback(self, ctx: commands.Context):
         """
         Revert the arrangement of channels in a category.

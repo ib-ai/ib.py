@@ -69,14 +69,14 @@ class Roles(commands.Cog):
         raise NotImplementedError('Command requires implementation and permission set-up.')
 
     
-    @reaction.command()
+    @reaction.command(aliases=['add'])
     async def create(self, ctx: commands.Context):
         """
         Create a reaction role.
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @reaction.command()
+    @reaction.command(aliases=['remove'])
     async def delete(self, ctx: commands.Context):
         """
         Delete a reaction role.

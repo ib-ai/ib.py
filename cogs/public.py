@@ -6,7 +6,7 @@ class Public(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
     
-    @commands.command()
+    @commands.command(aliases=['av'])
     async def avatar(self, ctx: commands.Context):
         """
         Display a user's avatar.
@@ -34,14 +34,14 @@ class Public(commands.Cog):
         """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @commands.command()
+    @commands.command(aliases=['si'])
     async def serverinfo(self, ctx: commands.Context):
         """
         Present server information.
         """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @commands.command()
+    @commands.command(aliases=['ui'])
     async def userinfo(self, ctx: commands.Context):
         """
         Present user information.

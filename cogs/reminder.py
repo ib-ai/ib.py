@@ -10,14 +10,14 @@ class Reminder(commands.Cog):
     async def reminder(self, ctx: commands.Context):
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @reminder.command()
+    @reminder.command(aliases=['add'])
     async def create(self, ctx: commands.Context):
         """
         Create a reminder.
         """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @reminder.command()
+    @reminder.command(aliases=['remove'])
     async def delete(self, ctx: commands.Context):
         """
         Delete a reminder.

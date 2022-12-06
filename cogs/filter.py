@@ -18,14 +18,14 @@ class Filter(commands.Cog):
     async def filter(self, ctx: commands.Context):
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @filter.command()
+    @filter.command(aliases=['add'])
     async def create(self, ctx: commands.Context):
         """
         Create a filter.
         """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @filter.command()
+    @filter.command(aliases=['remove'])
     async def delete(self, ctx: commands.Context):
         """
         Delete a filter.

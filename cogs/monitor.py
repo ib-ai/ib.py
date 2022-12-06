@@ -58,14 +58,14 @@ class Monitor(commands.Cog):
     async def message(self, ctx: commands.Context):
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @message.command()
+    @message.command(aliases=['add'])
     async def create(self, ctx: commands.Context):
         """
         Create a monitor for a message pattern.
         """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @message.command()
+    @message.command(aliases=['remove'])
     async def delete(self, ctx: commands.Context):
         """
         Delete a monitor for a message pattern.
@@ -77,14 +77,14 @@ class Monitor(commands.Cog):
     async def user(self, ctx: commands.Context):
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @user.command()
+    @user.command(aliases=['add'])
     async def create(self, ctx: commands.Context):
         """
         Create a monitor for a user.
         """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @user.command()
+    @user.command(aliases=['remove'])
     async def delete(self, ctx: commands.Context):
         """
         Delete a monitor for a user.

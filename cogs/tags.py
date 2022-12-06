@@ -17,14 +17,14 @@ class Tags(commands.Cog):
     async def tag(self, ctx: commands.Context):
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @tag.command()
+    @tag.command(aliases=['add'])
     async def create(self, ctx: commands.Context):
         """
         Create a tag.
         """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @tag.command()
+    @tag.command(aliases=['remove'])
     async def delete(self, ctx: commands.Context):
         """
         Delete a tag.
