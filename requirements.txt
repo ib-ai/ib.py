@@ -1,0 +1,16 @@
+aiohttp==3.8.3
+aiosignal==1.3.1
+async-timeout==4.0.2
+asyncpg==0.27.0
+attrs==22.1.0
+charset-normalizer==2.1.1
+discord.py==2.1.0
+emojis==0.7.0
+frozenlist==1.3.3
+idna==3.4
+multidict==6.0.3
+python-dateutil==2.8.2
+six==1.16.0
+tortoise-orm==0.19.2
+SQLAlchemy==1.3.24
+yarl==1.8.2
