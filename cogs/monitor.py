@@ -18,10 +18,16 @@ class Monitor(commands.Cog):
 
     @commands.group()
     async def monitor(self, ctx: commands.Context):
+        """
+        Commands for monitoring problematic message patterns and users.
+        """
         raise NotImplementedError('Command requires implementation and permission set-up.')
 
     @monitor.group()
     async def channel(self, ctx: commands.Context):
+        """
+        Commands for setting up channels to log problematic messages to.
+        """
         raise NotImplementedError('Command requires implementation and permission set-up.')
 
     @channel.command()
@@ -56,6 +62,9 @@ class Monitor(commands.Cog):
 
     @monitor.group()
     async def message(self, ctx: commands.Context):
+        """
+        Commands for monitoring problematic message patterns.
+        """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
     @message.command(aliases=['add'])
@@ -75,6 +84,9 @@ class Monitor(commands.Cog):
     
     @monitor.group()
     async def user(self, ctx: commands.Context):
+        """
+        Commands for monitoring problematic users.
+        """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
     @user.command(aliases=['add'])

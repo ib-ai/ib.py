@@ -8,6 +8,9 @@ class Updates(commands.Cog):
     
     @commands.group()
     async def update(self, ctx: commands.Context):
+        """
+        Commands for handling updates.
+        """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
     @update.command()

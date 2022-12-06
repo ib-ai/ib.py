@@ -8,6 +8,9 @@ class ChannelOrder(commands.Cog):
     
     @commands.group(aliases=['co'])
     async def channelorder(self, ctx: commands.Context):
+        """
+        Commands for discord channel arrangement within categories.
+        """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
     @channelorder.command()

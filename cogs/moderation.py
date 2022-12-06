@@ -67,6 +67,9 @@ class Moderation(commands.Cog):
 
     @commands.group()
     async def modlog(self, ctx: commands.Context):
+        """
+        Commands for setting channels to publish punishment updates to.
+        """
         raise NotImplementedError('Command requires implementation and permission set-up.')
 
     @modlog.command()
@@ -128,6 +131,9 @@ class Moderation(commands.Cog):
     
     @commands.group()
     async def purge(self, ctx: commands.Context):
+        """
+        Commands for bulk deletion.
+        """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
     @purge.command()

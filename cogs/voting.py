@@ -22,6 +22,9 @@ class Voting(commands.Cog):
     
     @commands.group()
     async def voteladder(self, ctx: commands.Context):
+        """
+        Commands for handling voteladders.
+        """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
     @voteladder.command()

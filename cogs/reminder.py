@@ -8,6 +8,9 @@ class Reminder(commands.Cog):
     
     @commands.group()
     async def reminder(self, ctx: commands.Context):
+        """
+        Commands for handling reminders.
+        """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
     @reminder.command(aliases=['add'])

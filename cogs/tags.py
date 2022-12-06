@@ -15,6 +15,9 @@ class Tags(commands.Cog):
     
     @commands.group()
     async def tag(self, ctx: commands.Context):
+        """
+        Commands for handling tags.
+        """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
     @tag.command(aliases=['add'])

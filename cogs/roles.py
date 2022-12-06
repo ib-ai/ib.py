@@ -32,6 +32,9 @@ class Roles(commands.Cog):
 
     @commands.group()
     async def cassowary(self, ctx: commands.Context):
+        """
+        Commands for handling cassowaries.
+        """
         raise NotImplementedError('Command requires implementation and permission set-up.')
 
     @cassowary.command()
@@ -66,6 +69,9 @@ class Roles(commands.Cog):
 
     @commands.group()
     async def reaction(self, ctx: commands.Context):
+        """
+        Commands for handling reaction roles.
+        """
         raise NotImplementedError('Command requires implementation and permission set-up.')
 
     

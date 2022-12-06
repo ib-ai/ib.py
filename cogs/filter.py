@@ -16,6 +16,9 @@ class Filter(commands.Cog):
 
     @commands.group()
     async def filter(self, ctx: commands.Context):
+        """
+        Commands for filtering unwanted message patterns.
+        """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
     @filter.command(aliases=['add'])
