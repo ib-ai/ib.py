@@ -1,13 +1,13 @@
 from tortoise import Tortoise
 import logging
-from utils import settings
+from utils import config
 
 logger = logging.getLogger()
 
 async def db_init():
     # Connect to Postgres DB
     await Tortoise.init(
-        db_url=f'postgres://{settings.config.db_user}:{settings.config.db_password}@{settings.config.db_host}:5432/{settings.config.db_name}',
+        db_url=f'postgres://{config.db_user}:{config.db_password}@{config.db_host}:5432/{config.db_name}',
         modules={'models': ['db.models']}
     )
     logger.info("Connected to database.")
