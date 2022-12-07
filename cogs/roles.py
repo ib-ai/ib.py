@@ -23,14 +23,14 @@ class Roles(commands.Cog):
         pass
 
 
-    @commands.command()
+    @commands.hybrid_command()
     async def buttonroles(self, ctx: commands.Context):
         """
         Send a message with buttons that add roles.
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
 
-    @commands.group()
+    @commands.hybrid_group()
     async def cassowary(self, ctx: commands.Context):
         """
         Commands for handling cassowaries.
@@ -59,7 +59,7 @@ class Roles(commands.Cog):
         raise NotImplementedError('Command requires implementation and permission set-up.')
 
 
-    @commands.command()
+    @commands.hybrid_command()
     async def giverole(self, ctx: commands.Context):
         """
         Assign a new role to all members with a specific role.
@@ -67,7 +67,7 @@ class Roles(commands.Cog):
         raise NotImplementedError('Command requires implementation and permission set-up.')
 
 
-    @commands.group()
+    @commands.hybrid_group()
     async def reaction(self, ctx: commands.Context):
         """
         Commands for handling reaction roles.

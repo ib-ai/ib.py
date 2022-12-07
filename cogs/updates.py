@@ -6,7 +6,7 @@ class Updates(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
     
-    @commands.group()
+    @commands.hybrid_group()
     async def update(self, ctx: commands.Context):
         """
         Commands for handling updates.

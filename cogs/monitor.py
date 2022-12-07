@@ -16,7 +16,7 @@ class Monitor(commands.Cog):
         pass
 
 
-    @commands.group()
+    @commands.hybrid_group()
     async def monitor(self, ctx: commands.Context):
         """
         Commands for monitoring problematic message patterns and users.

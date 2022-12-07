@@ -13,7 +13,7 @@ class Tags(commands.Cog):
         """
         pass
     
-    @commands.group()
+    @commands.hybrid_group()
     async def tag(self, ctx: commands.Context):
         """
         Commands for handling tags.

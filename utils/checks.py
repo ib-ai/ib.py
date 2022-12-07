@@ -2,8 +2,8 @@ import discord
 from discord.ext import commands
 
 def is_moderator(ctx: commands.Context):
-    role_id = None  # TODO: retrieve moderator role ID
-    return commands.has_role(role_id)
+    moderator_role_id = None  # TODO: retrieve moderator role ID
+    return any(role.id == moderator_role_id for role in ctx.author.roles)
 
 
 def admin_command():

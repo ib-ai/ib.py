@@ -51,21 +51,21 @@ class Moderation(commands.Cog):
         raise NotImplementedError('Command requires implementation and permission set-up.')
 
 
-    @commands.command()
+    @commands.hybrid_command()
     async def logs(self, ctx: commands.Context):
         """
         Set a channel for log messages.
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @commands.command()
+    @commands.hybrid_command()
     async def moderators(self, ctx: commands.Context):
         """
         Set a role for moderators.
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
 
-    @commands.group()
+    @commands.hybrid_group()
     async def modlog(self, ctx: commands.Context):
         """
         Commands for setting channels to publish punishment updates to.
@@ -86,7 +86,7 @@ class Moderation(commands.Cog):
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @commands.command()
+    @commands.hybrid_command()
     async def muterole(self, ctx: commands.Context):
         """
         Set a role for mutes.
@@ -94,42 +94,42 @@ class Moderation(commands.Cog):
         raise NotImplementedError('Command requires implementation and permission set-up.')
 
     
-    @commands.command()
+    @commands.hybrid_command()
     async def blacklist(self, ctx: commands.Context):
         """
         Ban a user that is not in the server.
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @commands.command()
+    @commands.hybrid_command()
     async def expire(self, ctx: commands.Context):
         """
         Set a duration for a punishment. Equivalently, schedule the revokement of a punishment.
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @commands.command()
+    @commands.hybrid_command()
     async def history(self, ctx: commands.Context):
         """
         Display a user's punishment history.
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @commands.command()
+    @commands.hybrid_command()
     async def lookup(self, ctx: commands.Context):
         """
         Retrieve punishment case by case number.
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @commands.command()
+    @commands.hybrid_command()
     async def note(self, ctx: commands.Context):
         """
         Save a note on a user.
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @commands.group()
+    @commands.hybrid_group()
     async def purge(self, ctx: commands.Context):
         """
         Commands for bulk deletion.
@@ -150,7 +150,7 @@ class Moderation(commands.Cog):
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
 
-    @commands.command()
+    @commands.hybrid_command()
     async def reason(self, ctx: commands.Context):
         """
         Set a reason for a punishment case.

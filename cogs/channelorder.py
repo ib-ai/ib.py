@@ -6,7 +6,7 @@ class ChannelOrder(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
     
-    @commands.group(aliases=['co'])
+    @commands.hybrid_group(aliases=['co'])
     async def channelorder(self, ctx: commands.Context):
         """
         Commands for discord channel arrangement within categories.

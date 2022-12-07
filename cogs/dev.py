@@ -18,8 +18,8 @@ class Dev(commands.Cog):
         """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @commands.command()
-    async def eval(self, ctx: commands.Context, *, code: str):
+    @commands.command(name='eval')
+    async def evaluate(self, ctx: commands.Context, *, code: str):
         """
         Run python code.
         """

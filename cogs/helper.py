@@ -13,21 +13,21 @@ class Helper(commands.Cog):
         """
         pass
     
-    @commands.command()
+    @commands.hybrid_command()
     async def helpermessage(self, ctx: commands.Context):
         """
         Send an updating list of helpers for a subject.
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @commands.command()
+    @commands.hybrid_command()
     async def pin(self, ctx: commands.Context):
         """
         Pin a message to a channel.
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @commands.command()
+    @commands.hybrid_command()
     async def unpin(self, ctx: commands.Context):
         """
         Unpin a message from a channel.

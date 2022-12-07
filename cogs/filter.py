@@ -14,7 +14,7 @@ class Filter(commands.Cog):
         pass
 
 
-    @commands.group()
+    @commands.hybrid_group()
     async def filter(self, ctx: commands.Context):
         """
         Commands for filtering unwanted message patterns.

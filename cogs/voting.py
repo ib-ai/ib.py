@@ -20,7 +20,7 @@ class Voting(commands.Cog):
         """
         pass
     
-    @commands.group()
+    @commands.hybrid_group()
     async def voteladder(self, ctx: commands.Context):
         """
         Commands for handling voteladders.
@@ -41,7 +41,7 @@ class Voting(commands.Cog):
         """
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @voteladder.command(aliases=['delete'])
+    @voteladder.command(aliases=['remove'])
     async def delete(self, ctx: commands.Context):
         """
         Delete a voteladder.
