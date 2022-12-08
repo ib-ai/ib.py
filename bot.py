@@ -63,6 +63,12 @@ class IBpy(commands.Bot):
         logger.info(f"Bot \"{bot_name}\" is now connected.")
         logger.info(f"Currently serving {guild_number} guilds.")
         logger.info(f"Described as \"{bot_description}\".")
+    
+    async def on_command_error(self, ctx: commands.Context, exception) -> None:
+        # sends the error message as a discord message
+        # uesful for debugging, TODO: remove/edit before pushing to production
+        await super().on_command_error(ctx, exception)
+        await ctx.send(exception)
 
 bot = IBpy()
 bot.run(config.token)
