@@ -56,6 +56,8 @@ class Updates(commands.Cog):
         """
         Create (up to 3) update entries.
         """
+        logging.debug(f'Update create - {update1}, {update2}, {update3}')
+
         # note: currently, discord does not support variable-length arguments in hybrid commands
         updates = [update1]
         if update2: updates.append(update2)
@@ -86,10 +88,9 @@ class Updates(commands.Cog):
         """
         Delete update entries.
         """
-        print(entries)
         if not entries:
             raise commands.BadArgument('Please provide a valid update entry. (Updates entries must be a positive integer.)')
-            return
+        logging.debug(f'Update delete - {entries}, {message.content}')
 
         # note: the zeroth entry is always the date
         # update entry indices are supplied with 1-based indexing
