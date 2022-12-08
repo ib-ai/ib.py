@@ -22,7 +22,7 @@ class GuildData(Model):
         table = "guild_data"
 
     guild_id = fields.BigIntField(pk=True, unique=True)
-    prefix = fields.CharField(max_length=1)
+    prefix = fields.CharField(max_length=1, null=True)
     modlog_id = fields.BigIntField(null=True)
     modlog_staff_id = fields.BigIntField(null=True)
     updates_id = fields.BigIntField(null=True)
