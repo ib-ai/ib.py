@@ -11,7 +11,8 @@ class Helper(commands.Cog):
         """
         Update helper message based on user helper/dehelper.
         """
-        pass
+        ...
+
     
     @commands.hybrid_command()
     async def helpermessage(self, ctx: commands.Context):

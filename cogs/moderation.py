@@ -13,42 +13,42 @@ class Moderation(commands.Cog):
         """
         Publish ban to mod-log.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        ...
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: discord.Member):
         """
         Publish kick to mod-log.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        ...
 
     @commands.Cog.listener()
     async def on_member_unban(self, guild: discord.Guild, user: discord.User):
         """
         Publish unban to mod-log.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        ...
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         """
         Publish mutes and unmutes to mod-log.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        ...
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
         """
         Log message edits.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        ...
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message):
         """
         Log message deletes.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        ...
 
 
     @commands.hybrid_command()

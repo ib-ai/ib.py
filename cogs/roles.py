@@ -13,14 +13,14 @@ class Roles(commands.Cog):
         """
         Increment vote count when reaction is added.
         """
-        pass
+        ...
 
     @commands.Cog.listener()
     async def on_raw_reaction_delete(self, message: discord.Message):
         """
         Decrement vote count when reaction is deleted.
         """
-        pass
+        ...
 
 
     @commands.hybrid_command()
