@@ -1,6 +1,10 @@
 import discord
 from discord.ext import commands
 
+def cogify(check):
+    return lambda self, ctx: check.predicate(ctx)
+
+
 def is_moderator(ctx: commands.Context):
     moderator_role_id = None  # TODO: retrieve moderator role ID
     return any(role.id == moderator_role_id for role in ctx.author.roles)
