@@ -48,13 +48,11 @@ class Updates(commands.Cog):
         """
         Set an updates channel.
         """
+        values = dict(updates_id = channel.id if channel else None)
+        await GuildData.update_or_create(values, guild_id = ctx.guild.id)
         if channel:
-            values = dict(updates_id = channel.id)
-            await GuildData.update_or_create(values, guild_id = ctx.guild.id)
             await ctx.send(f'Updates channel set to <#{channel.id}> for this guild.')
         else:
-            values = dict(updates_id = None)
-            await GuildData.update_or_create(values, guild_id = ctx.guild.id)
             await ctx.send(f'Updates channel removed for this guild.')
     
     @update.command(aliases=['add'])
