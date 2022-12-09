@@ -1,4 +1,4 @@
-def ordinal(n):
+def ordinal(n: int) -> str:
     match n%10:
         case 1:
             return f'{n}st'

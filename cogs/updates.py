@@ -35,21 +35,27 @@ class Updates(commands.Cog):
         subcmds = []
         for cmd in ctx.command.commands:
             try:
-                if all(check(ctx) for check in cmd.checks):
+                usable = await cmd.can_run(ctx)
+                if usable:
                     subcmds.append('`'+cmd.name+'`')
-            except commands.errors.MissingPermissions as e:
-                logging.debug(f'Command {cmd.name} discarded in {ctx.command.name} group subcommand list.')
+            except commands.CommandError as e:
+                logging.debug(f'Command "{cmd.name}" check threw error, discarded in {ctx.command.name} group subcommand list.')
         await ctx.send(f'Available subcommands: {", ".join(subcmds)}.')
     
     @update.command()
     @admin_command()
-    async def set(self, ctx: commands.Context, channel: discord.TextChannel):
+    async def set(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
         """
         Set an updates channel.
         """
-        values = dict(updates_id = channel.id)
-        await GuildData.update_or_create(values, guild_id = ctx.guild.id)
-        await ctx.send(f'Updates channel set to <#{channel.id}>.')
+        if channel:
+            values = dict(updates_id = channel.id)
+            await GuildData.update_or_create(values, guild_id = ctx.guild.id)
+            await ctx.send(f'Updates channel set to <#{channel.id}> for this guild.')
+        else:
+            values = dict(updates_id = None)
+            await GuildData.update_or_create(values, guild_id = ctx.guild.id)
+            await ctx.send(f'Updates channel removed for this guild.')
     
     @update.command(aliases=['add'])
     async def create(self, ctx: commands.Context, update1: str, update2: Optional[str] = None, update3: Optional[str] = None):
