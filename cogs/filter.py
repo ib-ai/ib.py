@@ -11,7 +11,7 @@ class Filter(commands.Cog):
         """
         Delete messages that match a filter's pattern.
         """
-        pass
+        ...
 
 
     @commands.hybrid_group()

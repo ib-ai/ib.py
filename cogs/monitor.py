@@ -13,7 +13,7 @@ class Monitor(commands.Cog):
         - are from a monitored user.
         - match a monitor's pattern.
         """
-        pass
+        ...
 
 
     @commands.hybrid_group()

@@ -11,7 +11,8 @@ class Tags(commands.Cog):
         """
         Respond to tags.
         """
-        pass
+        ...
+
     
     @commands.hybrid_group()
     async def tag(self, ctx: commands.Context):
