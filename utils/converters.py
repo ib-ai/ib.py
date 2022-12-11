@@ -3,14 +3,19 @@ import re
 from discord.ext import commands
 
 def Index(arg: str):
+    """
+    Checks if provided index is a valid and positive integer.
+    """
     n = int(arg)
     if n <= 0:
         raise commands.BadArgument('Index must be a positive integer.')
     return n
 
-class RegexConverter(commands.Converter):
-    async def convert(self, ctx: commands.Context, argument: str):
-        try: re.compile(argument)
-        except re.error: 
-            raise commands.BadArgument("The regex pattern provided is invalid.")
-        return argument
+def RegexConverter(arg: str):
+    """
+    Checks if provided regex pattern is valid.
+    """
+    try: re.compile(arg)
+    except re.error: 
+        raise commands.BadArgument("The regex pattern provided is invalid.")
+    return arg
