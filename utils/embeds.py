@@ -2,17 +2,48 @@ from typing import List, Optional
 import discord
 
 class EmbedGenerator():
+    """
+    A class that generates embeds from a list of entries.
+    """
     def __init__(self, entries: List, title: Optional[str] = "", description: Optional[str] = "", step: Optional[int] = 10):
-       self.entries = entries
-       self.title = title
-       self.description = description
-       self.step = step
+        """
+        Parameters
+        ----------
+        entries : List
+            List of entries to be displayed in the embed. Usually a list of strings.
+        title : Optional[str]
+            Title of the embed.
+        description : Optional[str]
+            Description of the embed.
+        step : Optional[int]
+            Number of entries to be displayed per embed (default 10). 
+        """
+        self.entries = entries
+        self.title = title
+        self.description = description
+        self.step = step
+    
+    @staticmethod
+    def build_field(embed: discord.Embed, index: int, value: str):
+        """
+        Builds a field for the embed.
 
-    def build_field(self, embed: discord.Embed, index: int, value: str):
+        Parameters
+        ----------
+        embed : discord.Embed
+            Embed to add the field to.
+        index : int
+            Index of the entry.
+        value : str
+            Value of the entry.
+        """
         value = f'{value:.512}{"..." if len(value) > 512 else ""}'
         embed.add_field(name=f"Entry #{index}", value=value, inline=False)
 
     def build_embed(self) -> List[discord.Embed]:
+        """
+        Builds embeds with specified step and returns list of embeds.
+        """
         if not self.entries:
             return [discord.Embed(title=self.title, description="No entries found.")]
 
