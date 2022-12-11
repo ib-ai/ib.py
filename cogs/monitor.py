@@ -34,22 +34,24 @@ class Monitor(commands.Cog):
 
         guild_data = await GuildData.get_or_none(guild_id=message.guild.id)
 
-        # If no guild data, or no monitoring enabled, or no log channels, return
-        if not guild_data or not guild_data.monitoring or not guild_data.monitor_user_log_id or not guild_data.monitor_message_log_id:
+        # If no guild data, or no monitoring enabled, return
+        if not guild_data or not guild_data.monitoring:
             return
         
-        # Retrieve monitored users and messages
-        monitor_users = [user.user_id for user in await StaffMonitorUser.all()]
-        monitor_messages = [pattern.message for pattern in await StaffMonitorMessage.all()]
-
-        if message.author.id in monitor_users:
-            await log_suspicious_message(guild_data.monitor_user_log_id, message)
+        # Monitored Users
+        if guild_data.monitor_user_log_id:
+            monitor_users = [user.user_id for user in await StaffMonitorUser.all()]
+            if message.author.id in monitor_users:
+                await log_suspicious_message(guild_data.monitor_user_log_id, message)
             return
         
-        for pattern in monitor_messages:
-            if re.search(pattern, message.content, re.IGNORECASE):
-                await log_suspicious_message(guild_data.monitor_message_log_id, message)
-                return
+        # Monitored Messages
+        if guild_data.monitor_message_log_id:
+            monitor_messages = [pattern.message for pattern in await StaffMonitorMessage.all()]
+            for pattern in monitor_messages:
+                if re.search(pattern, message.content, re.IGNORECASE):
+                    await log_suspicious_message(guild_data.monitor_message_log_id, message)
+                    return
 
     cog_check = cogify(staff_command())
 
