@@ -3,6 +3,7 @@ import re
 from typing import List, Optional
 import discord
 from discord.ext import commands
+from db.cached import get_guild_data
 from db.models import GuildData, StaffMonitorMessage, StaffMonitorUser
 
 from utils.checks import admin_command, cogify, staff_command
@@ -32,7 +33,7 @@ class Monitor(commands.Cog):
         
         # TODO Add check for config for NSA Deny List
 
-        guild_data = await GuildData.get_or_none(guild_id=message.guild.id)
+        guild_data = await get_guild_data(guild_id=message.guild.id)
 
         # If no guild data, or no monitoring enabled, return
         if not guild_data or not guild_data.monitoring:
@@ -78,6 +79,7 @@ class Monitor(commands.Cog):
         """
         values = dict(monitor_user_log_id = channel.id if channel else None)
         await GuildData.update_or_create(values, guild_id=ctx.guild.id)
+        get_guild_data.cache_clear()
 
         if channel:
             await ctx.send(f'Log channel for monitored users set to <#{channel.id}> for this guild.')
@@ -92,6 +94,7 @@ class Monitor(commands.Cog):
         """
         values = dict(monitor_message_log_id = channel.id if channel else None)
         await GuildData.update_or_create(values, guild_id=ctx.guild.id)
+        get_guild_data.cache_clear()
 
         if channel:
             await ctx.send(f'Log channel for monitored messages set to <#{channel.id}> for this guild.')
@@ -217,6 +220,7 @@ class Monitor(commands.Cog):
         guild_data = (await GuildData.get_or_create(guild_id=ctx.guild.id))[0]
         guild_data.monitoring = not guild_data.monitoring
         await guild_data.save()
+        get_guild_data.cache_clear()
 
         await ctx.send(f"Monitoring is now {'enabled' if guild_data.monitoring else 'disabled'} for this guild.")
 
