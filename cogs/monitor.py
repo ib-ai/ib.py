@@ -3,7 +3,7 @@ import re
 from typing import List, Optional
 import discord
 from discord.ext import commands
-from db.cached import get_guild_data
+from db.cached import get_all_monitor_messages, get_all_monitor_users, get_guild_data
 from db.models import GuildData, StaffMonitorMessage, StaffMonitorUser
 
 from utils.checks import admin_command, cogify, staff_command
@@ -41,14 +41,14 @@ class Monitor(commands.Cog):
         
         # Monitored Users
         if guild_data.monitor_user_log_id:
-            monitor_users = [user.user_id for user in await StaffMonitorUser.all()]
+            monitor_users = [user.user_id for user in await get_all_monitor_users()]
             if message.author.id in monitor_users:
                 await log_suspicious_message(guild_data.monitor_user_log_id, message)
-            return
+                return
         
         # Monitored Messages
         if guild_data.monitor_message_log_id:
-            monitor_messages = [pattern.message for pattern in await StaffMonitorMessage.all()]
+            monitor_messages = [pattern.message for pattern in await get_all_monitor_messages()]
             for pattern in monitor_messages:
                 if re.search(pattern, message.content, re.IGNORECASE):
                     await log_suspicious_message(guild_data.monitor_message_log_id, message)
@@ -106,13 +106,15 @@ class Monitor(commands.Cog):
         """
         Remove users that are no longer in the server.
         """
-        monitor_users = await StaffMonitorUser.all()
+        monitor_users = await get_all_monitor_users()
         users_removed = 0
 
         for monitor_user in monitor_users:
             if not ctx.guild.get_member(monitor_user.user_id):
                 await monitor_user.delete()
                 users_removed += 1
+
+        get_all_monitor_users.cache_clear()
         
         logging.debug(f"{users_removed} user(s) were removed from monitor.")
         await ctx.send(f"{users_removed} user(s) were removed from monitor.")
@@ -122,8 +124,8 @@ class Monitor(commands.Cog):
         """
         List of monitored message patterns and monitored users.
         """
-        monitor_users = await StaffMonitorUser.all()
-        monitor_messages = await StaffMonitorMessage.all()
+        monitor_users = await get_all_monitor_users()
+        monitor_messages = await get_all_monitor_messages()
 
         formatted_users = await formatted_user_monitor(ctx.guild, [user.user_id for user in monitor_users])
         formatted_messages = [f"Regex: `{pattern.message}`" for pattern in monitor_messages]
@@ -152,6 +154,7 @@ class Monitor(commands.Cog):
             return
 
         await StaffMonitorMessage.create(message=pattern)
+        get_all_monitor_messages.cache_clear()
 
         logging.debug(f"Added pattern {pattern} to monitor.")
         await ctx.send(f"The pattern (`{pattern}`) has been successfully added to monitor.")
@@ -168,6 +171,7 @@ class Monitor(commands.Cog):
             return
 
         await monitored_message.delete()
+        get_all_monitor_messages.cache_clear()
 
         logging.debug(f"Removed pattern {pattern} from monitor.")
         await ctx.send(f"The pattern (`{pattern}`) has been successfully removed from monitor.")
@@ -191,6 +195,7 @@ class Monitor(commands.Cog):
             return
 
         await StaffMonitorUser.create(user_id=member.id)
+        get_all_monitor_users.cache_clear()
 
         logging.debug(f"Added user with id {member.id} to monitor.")
         await ctx.send(f"{member.mention} has been successfully added to monitor.")
@@ -207,6 +212,7 @@ class Monitor(commands.Cog):
             return
 
         await monitored_user.delete()
+        get_all_monitor_users.cache_clear()
 
         logging.debug(f"Removed user with id {member.id} from monitor.")
         await ctx.send(f"{member.mention} has been successfully removed from monitor.")
