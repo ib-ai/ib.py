@@ -4,12 +4,22 @@ from utils import config
 
 logger = logging.getLogger()
 
+TORTOISE_ORM = {
+    "connections": {
+        "default": f'postgres://{config.db_user}:{config.db_password}@{config.db_host}:5432/{config.db_name}'
+    },
+    "apps": {
+        "models": {
+            "models": ["db.models", "aerich.models"],
+            "default_connection": "default",
+        },
+    },
+}
+
+
 async def db_init():
     # Connect to Postgres DB
-    await Tortoise.init(
-        db_url=f'postgres://{config.db_user}:{config.db_password}@{config.db_host}:5432/{config.db_name}',
-        modules={'models': ['db.models']}
-    )
+    await Tortoise.init(config=TORTOISE_ORM)
     logger.info("Connected to database.")
 
     # Generate the tables
