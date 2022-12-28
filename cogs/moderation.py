@@ -147,8 +147,6 @@ class Moderation(commands.Cog):
             except discord.Forbidden:
                 await ctx.reply('I do not have permission to delete messages.', delete_after=5)
                 return
-            except discord.NotFound:
-                return
             except discord.HTTPException:
                 await ctx.reply('An error occurred while deleting messages.', delete_after=5)
                 return
@@ -165,8 +163,6 @@ class Moderation(commands.Cog):
             except discord.Forbidden:
                 await ctx.reply('I do not have permission to clear reactions.', delete_after=5)
                 return
-            except discord.NotFound:
-                pass
             except discord.HTTPException:
                 await ctx.reply('An error occurred while clearing reactions.', delete_after=5)
                 return
