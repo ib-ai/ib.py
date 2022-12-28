@@ -92,7 +92,6 @@ class Moderation(commands.Cog):
         Set a role for mutes.
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
-
     
     @commands.hybrid_command()
     async def ban(self, ctx: commands.Context, user: discord.User, *, reason: str):
