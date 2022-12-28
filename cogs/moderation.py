@@ -129,26 +129,36 @@ class Moderation(commands.Cog):
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @commands.hybrid_group()
+    @commands.hybrid_group(invoke_without_command=False)
     async def purge(self, ctx: commands.Context):
         """
         Commands for bulk deletion.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        pass
     
     @purge.command()
-    async def message(self, ctx: commands.Context):
+    async def message(self, ctx: commands.Context, number: int):
         """
         Bulk delete messages.
         """ 
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        async for message in ctx.channel.history(limit=number):
+            try:
+                await message.delete()
+            except: # Just in case Discord poops itself and the API returns an error, we don't want to crash the command.
+                pass
+        await ctx.reply(f'Deleted {number} messages.', delete_after=5)
     
     @purge.command()
-    async def reaction(self, ctx: commands.Context):
+    async def reaction(self, ctx: commands.Context, number: int):
         """
         Bulk delete reactions.
         """ 
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        async for message in ctx.channel.history(limit=number):
+            try:
+                await message.clear_reactions()
+            except:
+                pass
+        await ctx.reply(f'Cleared all reactions from the previous {number} messages.', delete_after=5)
 
     @commands.hybrid_command()
     async def reason(self, ctx: commands.Context):
