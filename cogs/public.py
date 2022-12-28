@@ -7,18 +7,24 @@ class Public(commands.Cog):
         self.bot = bot
     
     @commands.hybrid_command(aliases=['av'])
-    async def avatar(self, ctx: commands.Context):
+    async def avatar(self, ctx: commands.Context, user: discord.User = None):
         """
         Display a user's avatar.
         """ 
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        user = user or ctx.author
+        embed = discord.Embed(color=discord.Color.blurple())
+        embed.set_author(name=f'{user.name}\'s avatar', icon_url=user.display_avatar.url)
+        embed.set_image(url=user.display_avatar.url)
     
     @commands.hybrid_command()
-    async def banner(self, ctx: commands.Context):
+    async def banner(self, ctx: commands.Context, user: discord.User = None):
         """
         Display a user's banner.
         """ 
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        user = user or ctx.author
+        embed = discord.Embed(color=discord.Color.blurple())
+        embed.set_author(name=f'{user.name}\'s banner', icon_url=user.display_avatar.url)
+        embed.set_image(url=user.banner.url if user.banner else None)
     
     @commands.hybrid_command()
     async def opt(self, ctx: commands.Context):
