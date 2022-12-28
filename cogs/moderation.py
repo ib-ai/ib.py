@@ -175,6 +175,5 @@ class Moderation(commands.Cog):
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
 
-
 async def setup(bot: commands.Bot):
     await bot.add_cog(Moderation(bot))
