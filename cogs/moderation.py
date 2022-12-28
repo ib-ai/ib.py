@@ -144,8 +144,14 @@ class Moderation(commands.Cog):
         async for message in ctx.channel.history(limit=number):
             try:
                 await message.delete()
-            except: # Just in case Discord poops itself and the API returns an error, we don't want to crash the command.
-                pass
+            except discord.Forbidden:
+                await ctx.reply('I do not have permission to delete messages.', delete_after=5)
+                return
+            except discord.NotFound:
+                return
+            except discord.HTTPException:
+                await ctx.reply('An error occurred while deleting messages.', delete_after=5)
+                return
         await ctx.reply(f'Deleted {number} messages.', delete_after=5)
     
     @purge.command()
@@ -156,8 +162,14 @@ class Moderation(commands.Cog):
         async for message in ctx.channel.history(limit=number):
             try:
                 await message.clear_reactions()
-            except:
+            except discord.Forbidden:
+                await ctx.reply('I do not have permission to clear reactions.', delete_after=5)
+                return
+            except discord.NotFound:
                 pass
+            except discord.HTTPException:
+                await ctx.reply('An error occurred while clearing reactions.', delete_after=5)
+                return
         await ctx.reply(f'Cleared all reactions from the previous {number} messages.', delete_after=5)
 
     @commands.hybrid_command()
