@@ -95,11 +95,12 @@ class Moderation(commands.Cog):
 
     
     @commands.hybrid_command()
-    async def blacklist(self, ctx: commands.Context):
+    async def ban(self, ctx: commands.Context, user: discord.User, *, reason: str):
         """
-        Ban a user that is not in the server.
+        Ban a user (including those that are not in the server).
         """ 
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        await ctx.guild.ban(user, reason=reason)
+        await ctx.reply(f'Banned {user} for {reason}.', delete_after=5)
     
     @commands.hybrid_command()
     async def expire(self, ctx: commands.Context):
