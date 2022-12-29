@@ -5,15 +5,38 @@ class Public(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
     
-    @commands.hybrid_command(aliases=['av'])
-    async def avatar(self, ctx: commands.Context, user: discord.User = None):
+    @commands.hybrid_group()
+    async def avatar(self, ctx: commands.Context):
         """
         Display a user's avatar.
+        """
+        #TODO: send available_subcommands from utils.commands
+        pass
+
+    @avatar.command()
+    async def guild(self, ctx: commands.Context, member: discord.Member = None):
+        """
+        Display a user\'s guild-specific avatar, if available.
         """ 
-        user = user or ctx.author
+        member = member or ctx.author
+
+        if not member.guild_avatar:
+            return await ctx.send(f'{member} has no guild avatar.')
+
         embed = discord.Embed(color=discord.Color.blurple())
-        embed.set_author(name=f"{user.name}'s avatar", icon_url=user.display_avatar.url)
-        embed.set_image(url=user.display_avatar.url)
+        embed.set_author(name=f"{member.name}'s avatar")
+        embed.set_image(url=member.guild_avatar.url)
+        await ctx.send(embed=embed)
+
+    @avatar.command(name='global')
+    async def _global(self, ctx: commands.Context, member: discord.Member = None):
+        """
+        Display a user\'s global avatar.
+        """
+        member = member or ctx.author
+        embed = discord.Embed(color=discord.Color.blurple())
+        embed.set_author(name=f"{member.name}'s avatar")
+        embed.set_image(url=member.avatar.url if member.avatar else member.default_avatar.url)
         await ctx.send(embed=embed)
     
     @commands.hybrid_command()

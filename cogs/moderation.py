@@ -2,7 +2,6 @@ from typing import Union
 
 import discord
 from discord.ext import commands
-from cogs.help import IBpyHelp
 
 
 class Moderation(commands.Cog):
@@ -139,8 +138,8 @@ class Moderation(commands.Cog):
         """
         Commands for bulk deletion.
         """
-        if not ctx.invoked_subcommand:
-            await IBpyHelp.send_command_help(ctx)
+        #TODO: send available_subcommands from utils.commands
+        pass
     
     @purge.command()
     async def message(self, ctx: commands.Context, number: int):
