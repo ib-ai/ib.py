@@ -14,7 +14,7 @@ class Public(commands.Cog):
         embed = discord.Embed(color=discord.Color.blurple())
         embed.set_author(name=f"{user.name}'s avatar", icon_url=user.display_avatar.url)
         embed.set_image(url=user.display_avatar.url)
-        await ctx.reply(embed=embed)
+        await ctx.send(embed=embed)
     
     @commands.hybrid_command()
     async def banner(self, ctx: commands.Context, user: discord.User = None):
@@ -24,8 +24,11 @@ class Public(commands.Cog):
         user = user or ctx.author
         embed = discord.Embed(color=discord.Color.blurple())
         embed.set_author(name=f"{user.name}'s banner", icon_url=user.display_avatar.url)
-        embed.set_image(url=user.banner.url if user.banner else None)
-        await ctx.reply(embed=embed)
+        if user.banner:
+            embed.set_image(url=user.banner.url)
+        else:
+            embed.description = 'User has no banner.'
+        await ctx.send(embed=embed)
     
     @commands.hybrid_command()
     async def opt(self, ctx: commands.Context):
@@ -40,7 +43,7 @@ class Public(commands.Cog):
         Measure latency.
         """
         embed = discord.Embed(description=f"I don't see how this will help you, but my ping is `{round(self.bot.latency * 1000)}ms`", color=discord.Color.orange())
-        await ctx.reply(embed=embed)
+        await ctx.send(embed=embed)
     
     @commands.hybrid_command(aliases=['si'])
     async def serverinfo(self, ctx: commands.Context):
@@ -62,7 +65,7 @@ class Public(commands.Cog):
         if member.premium_since:
             embed.add_field(name='**Nitro boosting since**', value=f'{member.premium_since.strftime("%c")}', inline=False)
         embed.set_thumbnail(url=member.display_avatar.url)
-        await ctx.reply(embed=embed)
+        await ctx.send(embed=embed)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Public(bot))
