@@ -22,12 +22,12 @@ class Public(commands.Cog):
         Display a user's banner.
         """ 
         user = user or ctx.author
+        if not user.banner:
+            return await ctx.send(f'{user} has no banner.')
+
         embed = discord.Embed(color=discord.Color.blurple())
         embed.set_author(name=f"{user.name}'s banner", icon_url=user.display_avatar.url)
-        if user.banner:
-            embed.set_image(url=user.banner.url)
-        else:
-            embed.description = 'User has no banner.'
+        embed.set_image(url=user.banner.url)
         await ctx.send(embed=embed)
     
     @commands.hybrid_command()
@@ -42,7 +42,7 @@ class Public(commands.Cog):
         """
         Measure latency.
         """
-        embed = discord.Embed(description=f"I don't see how this will help you, but my ping is `{round(self.bot.latency * 1000)}ms`", color=discord.Color.orange())
+        embed = discord.Embed(description=f"I don't see how this will help you, but my ping is `{round(self.bot.latency * 1000)}ms`.", color=discord.Color.orange())
         await ctx.send(embed=embed)
     
     @commands.hybrid_command(aliases=['si'])
