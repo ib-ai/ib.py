@@ -1,5 +1,4 @@
 from typing import Union
-import typing
 
 import discord
 from discord.ext import commands
@@ -134,7 +133,7 @@ class Moderation(commands.Cog):
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @commands.hybrid_group()
+    @commands.group()
     async def purge(self, ctx: commands.Context):
         """
         Commands for bulk deletion.
@@ -159,7 +158,7 @@ class Moderation(commands.Cog):
         await ctx.send(f'Deleted {number} messages.', delete_after=5)
     
     @purge.command()
-    async def reaction(self, ctx: commands.Context, channel: discord.TextChannel, message_id: int, emoji: typing.Union[discord.Emoji, discord.PartialEmoji, str]):
+    async def reaction(self, ctx: commands.Context, channel: discord.TextChannel, message_id: int, emoji: discord.Emoji):
         """
         Bulk delete reactions.
         """ 
