@@ -159,7 +159,7 @@ class Moderation(commands.Cog):
         await ctx.send(f'Deleted {number} messages.', delete_after=5)
     
     @purge.command()
-    async def reaction(self, ctx: commands.Context, channel: discord.TextChannel, message_id: int, emoji: typing.Union[discord.Emoji, discord.Reaction, discord.PartialEmoji]):
+    async def reaction(self, ctx: commands.Context, channel: discord.TextChannel, message_id: int, emoji: typing.Union[discord.Emoji, discord.PartialEmoji, str]):
         """
         Bulk delete reactions.
         """ 
