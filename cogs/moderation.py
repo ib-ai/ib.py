@@ -100,11 +100,11 @@ class Moderation(commands.Cog):
         Blacklist a user that is not in the server.
         """ 
         if user in ctx.guild.members:
-            await ctx.reply("User is in the server. Please use Discord's built-in moderation tools.", delete_after=5)
+            await ctx.reply("User is in the server. Please use Discord's built-in moderation tools.")
             return
 
         await ctx.guild.ban(user, reason=reason)
-        await ctx.reply(f'Banned {user} for `{reason}`.', delete_after=5)
+        await ctx.reply(f'Banned {user} for `{reason}`.')
     
     @commands.hybrid_command()
     async def expire(self, ctx: commands.Context):
@@ -151,10 +151,10 @@ class Moderation(commands.Cog):
             try:
                 await message.delete()
             except discord.Forbidden:
-                await ctx.reply('I do not have permission to delete messages.', delete_after=5)
+                await ctx.reply('I do not have permission to delete messages.')
                 return
             except discord.HTTPException:
-                await ctx.reply('An error occurred while deleting messages.', delete_after=5)
+                await ctx.reply('An error occurred while deleting messages.')
                 return
         await ctx.reply(f'Deleted {number} messages.', delete_after=5)
     
@@ -169,25 +169,25 @@ class Moderation(commands.Cog):
             await ctx.reply('Message not found.', delete_after=5)
             return
         except discord.Forbidden:
-            await ctx.reply('I do not have permission to read messages in that channel.', delete_after=5)
+            await ctx.reply('I do not have permission to read messages in that channel.')
             return
         except discord.HTTPException:
-            await ctx.reply('An error occurred while fetching the message.', delete_after=5)
+            await ctx.reply('An error occurred while fetching the message.')
             return
 
         try:
             await message.clear_reaction(emoji)
         except discord.Forbidden:
-            await ctx.reply('I do not have permission to delete reactions.', delete_after=5)
+            await ctx.reply('I do not have permission to delete reactions.')
             return
         except discord.NotFound:
-            await ctx.reply('The emoji you specifiied was not found.', delete_after=5)
+            await ctx.reply('The emoji you specifiied was not found.')
             return
         except TypeError:
-            await ctx.reply('The emoji you specified is invalid.', delete_after=5)
+            await ctx.reply('The emoji you specified is invalid.')
             return
         except discord.HTTPException:
-            await ctx.reply('An error occurred while deleting reactions.', delete_after=5)
+            await ctx.reply('An error occurred while deleting reactions.')
             return
         
         await ctx.reply(f'Deleted reactions to {message_id} with emoji {emoji}.', delete_after=5)
