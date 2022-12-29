@@ -12,7 +12,7 @@ class Public(commands.Cog):
         """ 
         user = user or ctx.author
         embed = discord.Embed(color=discord.Color.blurple())
-        embed.set_author(name=f'{user.name}\'s avatar', icon_url=user.display_avatar.url)
+        embed.set_author(name=f"{user.name}'s avatar", icon_url=user.display_avatar.url)
         embed.set_image(url=user.display_avatar.url)
         await ctx.reply(embed=embed)
     
@@ -23,7 +23,7 @@ class Public(commands.Cog):
         """ 
         user = user or ctx.author
         embed = discord.Embed(color=discord.Color.blurple())
-        embed.set_author(name=f'{user.name}\'s banner', icon_url=user.display_avatar.url)
+        embed.set_author(name=f"{user.name}'s banner", icon_url=user.display_avatar.url)
         embed.set_image(url=user.banner.url if user.banner else None)
         await ctx.reply(embed=embed)
     
@@ -39,7 +39,8 @@ class Public(commands.Cog):
         """
         Measure latency.
         """
-        await ctx.reply(embed=discord.Embed(description=f'I don\'t see how this will help you, but my ping is `{round(self.bot.latency * 1000)}ms`',color=discord.Color.orange()))
+        embed = discord.Embed(description=f"I don't see how this will help you, but my ping is `{round(self.bot.latency * 1000)}ms`", color=discord.Color.orange())
+        await ctx.reply(embed=embed)
     
     @commands.hybrid_command(aliases=['si'])
     async def serverinfo(self, ctx: commands.Context):
