@@ -88,7 +88,12 @@ class Public(commands.Cog):
         embed.add_field(name='**Account creation date**', value=f'{member.created_at.strftime("%c")}', inline=False)
         embed.add_field(name='**Discord ID**', value=f'{member.id}')
         embed.add_field(name='**Status**', value=f'{member.status}')
-        embed.add_field(name='**Roles**', value=', '.join([role.mention for role in member.roles]), inline=False)
+        roles = [role.mention for role in member.roles if not role.is_default()]
+        if roles:
+            rolestext = ', '.join(roles)
+        else:
+            rolestext = 'No roles'
+        embed.add_field(name='**Roles**', value=rolestext, inline=False)
         if member.premium_since:
             embed.add_field(name='**Nitro boosting since**', value=f'{member.premium_since.strftime("%c")}', inline=False)
         embed.set_thumbnail(url=member.display_avatar.url)
