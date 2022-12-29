@@ -83,6 +83,7 @@ class Public(commands.Cog):
         member = member or ctx.author
         embed = discord.Embed(color=discord.Color.random())
         embed.set_author(name=f'{member.name}\'s information', icon_url=member.display_avatar.url)
+        embed.add_field(name='**Nickname**', value=f'{member.display_name}', inline=False)
         embed.add_field(name='**Server join date**', value=f'{member.joined_at.strftime("%c")}')
         embed.add_field(name='**Account creation date**', value=f'{member.created_at.strftime("%c")}', inline=False)
         embed.add_field(name='**Discord ID**', value=f'{member.id}')
