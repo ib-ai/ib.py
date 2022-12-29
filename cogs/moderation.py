@@ -2,6 +2,7 @@ from typing import Union
 
 import discord
 from discord.ext import commands
+from cogs.help import IBpyHelp
 
 
 class Moderation(commands.Cog):
@@ -94,12 +95,16 @@ class Moderation(commands.Cog):
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
     @commands.hybrid_command()
-    async def ban(self, ctx: commands.Context, user: discord.User, *, reason: str):
+    async def blacklist(self, ctx: commands.Context, user: discord.User, *, reason: str):
         """
-        Ban a user (including those that are not in the server).
+        Blacklist a user that is not in the server.
         """ 
+        if user in ctx.guild.members:
+            await ctx.reply("User is in the server. Please use Discord's built-in moderation tools.", delete_after=5)
+            return
+
         await ctx.guild.ban(user, reason=reason)
-        await ctx.reply(f'Banned {user} for {reason}.', delete_after=5)
+        await ctx.reply(f'Banned {user} for `{reason}`.', delete_after=5)
     
     @commands.hybrid_command()
     async def expire(self, ctx: commands.Context):
@@ -129,12 +134,13 @@ class Moderation(commands.Cog):
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @commands.hybrid_group(invoke_without_command=False)
+    @commands.hybrid_group()
     async def purge(self, ctx: commands.Context):
         """
         Commands for bulk deletion.
         """
-        pass
+        if not ctx.invoked_subcommand:
+            await IBpyHelp.send_command_help(ctx)
     
     @purge.command()
     async def message(self, ctx: commands.Context, number: int):
@@ -153,20 +159,32 @@ class Moderation(commands.Cog):
         await ctx.reply(f'Deleted {number} messages.', delete_after=5)
     
     @purge.command()
-    async def reaction(self, ctx: commands.Context, number: int):
+    async def reaction(self, ctx: commands.Context, channel: discord.TextChannel, message_id: int, emoji: str):
         """
         Bulk delete reactions.
         """ 
-        async for message in ctx.channel.history(limit=number):
-            try:
-                await message.clear_reactions()
-            except discord.Forbidden:
-                await ctx.reply('I do not have permission to clear reactions.', delete_after=5)
-                return
-            except discord.HTTPException:
-                await ctx.reply('An error occurred while clearing reactions.', delete_after=5)
-                return
-        await ctx.reply(f'Cleared all reactions from the previous {number} messages.', delete_after=5)
+        try:
+            message = await channel.fetch_message(message_id)
+        except discord.NotFound:
+            await ctx.reply('Message not found.', delete_after=5)
+            return
+        except discord.Forbidden:
+            await ctx.reply('I do not have permission to read messages in that channel.', delete_after=5)
+            return
+        except discord.HTTPException:
+            await ctx.reply('An error occurred while fetching the message.', delete_after=5)
+            return
+
+        try:
+            await message.clear_reaction(emoji)
+        except discord.Forbidden:
+            await ctx.reply('I do not have permission to delete reactions.', delete_after=5)
+            return
+        except discord.HTTPException:
+            await ctx.reply('An error occurred while deleting reactions.', delete_after=5)
+            return
+        
+        await ctx.reply(f'Deleted reactions to {message_id} with emoji {emoji}.', delete_after=5)
 
     @commands.hybrid_command()
     async def reason(self, ctx: commands.Context):
