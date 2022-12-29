@@ -180,6 +180,12 @@ class Moderation(commands.Cog):
         except discord.Forbidden:
             await ctx.reply('I do not have permission to delete reactions.', delete_after=5)
             return
+        except discord.NotFound:
+            await ctx.reply('The emoji you specifiied was not found.', delete_after=5)
+            return
+        except TypeError:
+            await ctx.reply('The emoji you specified is invalid.', delete_after=5)
+            return
         except discord.HTTPException:
             await ctx.reply('An error occurred while deleting reactions.', delete_after=5)
             return
