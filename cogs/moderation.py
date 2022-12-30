@@ -142,7 +142,8 @@ class Moderation(commands.Cog):
         """
         Commands for bulk deletion.
         """
-        await available_subcommands(ctx)
+        if not ctx.invoked_subcommand:
+            await available_subcommands(ctx)
     
     @purge.command()
     async def message(self, ctx: commands.Context, number: int):
