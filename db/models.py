@@ -1,251 +1,202 @@
-import json
+from tortoise.models import Model
+from tortoise.contrib.postgres.fields import ArrayField
+from tortoise import fields
 import enum
-from gino import Gino
-from sqlalchemy.sql import func
 
-db = Gino()
+# Enums
 
-with open('./config.json', 'r') as config_json:
-    config = json.load(config_json)
+class PunishmentType(str, enum.Enum):
+    KICK = "kick"
+    MUTE = "mute"
+    BAN = "ban"
+    UNKNOWN = "unknown"
 
-# Schema List
+class ChannelType(str, enum.Enum):
+    TEXT = "text"
+    VOICE = "voice"
 
-schemas_list = ["guild", "staff", "helper", "member"]
+# Guild Tables
 
-# Custom Enums
+class GuildData(Model):
+    class Meta():
+        table = "guild_data"
 
-class PunishmentType(enum.Enum):
-    KICK = enum.auto(),
-    MUTE = enum.auto(),
-    BAN = enum.auto(),
-    UNKNOWN = enum.auto()
+    guild_id = fields.BigIntField(pk=True, unique=True)
+    prefix = fields.CharField(max_length=1, null=True)
+    modlog_id = fields.BigIntField(null=True)
+    modlog_staff_id = fields.BigIntField(null=True)
+    updates_id = fields.BigIntField(null=True)
+    logs_id = fields.BigIntField(null=True)
+    mute_id = fields.BigIntField(null=True)
+    moderator_id = fields.BigIntField(null=True)
+    helper_id = fields.BigIntField(null=True)
+    filtering = fields.BooleanField(default=False)
+    removal = fields.BooleanField(default=False)
+    monitoring = fields.BooleanField(default=False)
+    monitor_user_log_id = fields.BigIntField(null=True)
+    monitor_message_log_id = fields.BigIntField(null=True)
 
-class ChannelType(enum.Enum):
-    TEXT = enum.auto(),
-    VOICE = enum.auto()
+class GuildSnapshot(Model):
+    class Meta():
+        table = "snapshot"
+    
+    snapshot_id = fields.IntField(pk=True)
+    category_id = fields.BigIntField()
+    channel_type = fields.CharEnumField(ChannelType)
+    channel_list = ArrayField()
 
-# Server tables
+class GuildCassowary(Model):
+    class Meta():
+        table = "cassowary"
+    
+    cassowary_id = fields.IntField(pk=True)
+    label = fields.CharField(max_length=256)
+    penguin = fields.BooleanField(default=False)
 
-class GuildData(db.Model):
-    __tablename__ = "guild_data"
-    __table_args__ = {"schema": "guild"}
+class GuildCassowaryRoles(Model):
+    class Meta():
+        table = "cassowary_roles"
+    
+    category_role_id = fields.BigIntField(pk=True)
+    role_id = fields.BigIntField()
+    cassowary_id = fields.OneToOneField('models.GuildCassowary')
 
-    guild_id = db.Column(db.BigInteger(), primary_key=True, autoincrement=False)
-    prefix = db.Column(db.CHAR(1))
-    modlog_id = db.Column(db.BigInteger())
-    modlog_staff_id = db.Column(db.BigInteger())
-    updates_id = db.Column(db.BigInteger())
-    logs_id = db.Column(db.BigInteger())
-    mute_id = db.Column(db.BigInteger())
-    moderator_id = db.Column(db.BigInteger())
-    helper_id = db.Column(db.BigInteger())
-    filtering = db.Column(db.Boolean(), default=False)
-    removal = db.Column(db.Boolean(), default=False)
-    monitoring = db.Column(db.Boolean(), default=False)
-    monitor_user_log_id = db.Column(db.BigInteger())
-    monitor_message_log_id = db.Column(db.BigInteger())
+class GuildVoteLadder(Model):
+    class Meta():
+        table = "vote_ladder"
+    
+    vote_ladder_id = fields.IntField(pk=True)
+    vote_ladder_label = fields.CharField(max_length=256)
+    vote_ladder_roles = ArrayField()
+    channel_id = fields.BigIntField()
+    threshold = fields.IntField()
+    minimum = fields.IntField()
+    timeout = fields.IntField()
 
-class GuildSnapshot(db.Model):
-    __tablename__ = "snapshot"
-    __table_args__ = {"schema": "guild"}
-
-    snapshot_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    category_id = db.Column(db.BigInteger())
-    channel_type = db.Column(db.Enum(ChannelType, schema="guild"))
-    channel_list = db.Column(db.ARRAY(db.BigInteger()))
-
-class GuildCassowary(db.Model):
-    __tablename__ = "cassowary"
-    __table_args__ = {"schema": "guild"}
-
-    cassowary_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    label = db.Column(db.Text())
-    penguin = db.Column(db.Boolean())
-
-class GuildCassowaryRoles(db.Model):
-    __tablename__ = "cassowary_roles"
-    __table_args__ = {"schema": "guild"}
-
-    category_role_id = db.Column(db.BigInteger(), primary_key=True, autoincrement=False)
-    role_id = db.Column(db.BigInteger())
-    cassowary_id = db.Column(db.Integer(), db.ForeignKey(GuildCassowary.cassowary_id))
-
-class GuildVoteLadder(db.Model):
-    __tablename__ = "vote_ladder"
-    __table_args__ = {"schema": "guild"}
-
-    ladder_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    ladder_label = db.Column(db.Text())
-    ladder_role = db.Column(db.BigInteger())
-    channel_id = db.Column(db.Text())
-    threshold = db.Column(db.Integer())
-    minimum = db.Column(db.Integer())
-    timeout = db.Column(db.Integer())
-
-class GuildVote(db.Model):
-    __tablename__ = "vote"
-    __table_args__ = {"schema": "guild"}
-
-    vote_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    message_id = db.Column(db.BigInteger())
-    message = db.Column(db.Text())
-    positive = db.Column(db.Integer(), unique=False, default=0)
-    negative = db.Column(db.Integer(), unique=False, default=0)
-    expiry = db.Column(db.Integer(), default = 604800) # 1 week in seconds
-    finished = db.Column(db.Boolean(), default = False)
-    ladder_id = db.Column(db.Integer(), db.ForeignKey(GuildVoteLadder.ladder_id))
+class GuildVote(Model):
+    class Meta():
+        table = "vote"
+    
+    vote_id = fields.IntField(pk=True)
+    message_id = fields.BigIntField()
+    message = fields.TextField()
+    positive = fields.IntField(default=0)
+    negative = fields.IntField(default=0)
+    expiry = fields.IntField(default=604800) # 1 week in seconds
+    finished = fields.BooleanField(default=False)
+    vote_ladder_id = fields.OneToOneField('models.GuildVoteLadder')
 
 # Staff Tables
 
-class StaffTag(db.Model):
-    __tablename__ = "tag"
-    __table_args__ = {"schema": "staff"}
+class StaffTag(Model):
+    class Meta():
+        table = "tag"
 
-    tag_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    trigger = db.Column(db.Text())
-    output = db.Column(db.Text())
-    disabled = db.Column(db.Boolean(), default=False)
+    tag_id = fields.IntField(pk=True)
+    trigger = fields.CharField(max_length=256)
+    output = fields.CharField(max_length=1024)
+    disabled = fields.BooleanField(default=False)
 
-class StaffNote(db.Model):
-    __tablename__ = "note"
-    __table_args__ = {"schema": "staff"}
+class StaffNote(Model):
+    class Meta():
+        table = "note"
 
-    note_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    user_id = db.Column(db.BigInteger())
-    author_id = db.Column(db.BigInteger())
-    timestamp = db.Column(db.DateTime(), default=func.now())
-    data = db.Column(db.Text())
+    note_id = fields.IntField(pk=True)
+    user_id = fields.BigIntField()
+    author_id = fields.BigIntField()
+    note = fields.CharField(max_length=1024)
+    timestamp = fields.DatetimeField(auto_now_add=True)
 
-class StaffMonitorUser(db.Model):
-    __tablename__ = "monitor_user"
-    __table_args__ = {"schema": "staff"}
+class StaffMonitorUser(Model):
+    class Meta():
+        table = "monitor_user"
 
-    monitor_user_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    user_id = db.Column(db.BigInteger())
+    monitor_user_id = fields.IntField(pk=True)
+    user_id = fields.BigIntField()
+    
+class StaffMonitorMessage(Model):
+    class Meta():
+        table = "monitor_message"
 
-class StaffMonitorMessage(db.Model):
-    __tablename__ = "monitor_message"
-    __table_args__ = {"schema": "staff"}
+    monitor_message_id = fields.IntField(pk=True)
+    message = fields.CharField(max_length=1000)
 
-    monitor_message_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    message = db.Column(db.Text())
+class StaffFilter(Model):
+    class Meta():
+        table = "filter"
 
-class StaffFilter(db.Model):
-    __tablename__ = "filter"
-    __table_args__ = {"schema": "staff"}
+    filter_id = fields.IntField(pk=True)
+    trigger = fields.CharField(max_length=1024)
+    notify = fields.BooleanField(default=False)
 
-    filter_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    trigger = db.Column(db.Text())
-    notify = db.Column(db.Boolean(), default=False)
+class StaffReaction(Model):
+    class Meta():
+        table = "reaction"
 
-class StaffReaction(db.Model):
-    __tablename__ = "reaction"
-    __table_args__ = {"schema": "staff"}
+    reaction_id = fields.IntField(pk=True)
+    channel_id = fields.BigIntField()
+    message_id = fields.BigIntField()
 
-    reaction_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    channel_id = db.Column(db.BigInteger())
-    message_id = db.Column(db.BigInteger())
+class StaffButtonRole(Model):
+    class Meta():
+        table = "buttonrole"
 
-class StaffReactionRole(db.Model):
-    __tablename__ = "reaction_role"
-    __table_args__ = {"schema": "staff"}
+    button_role_id = fields.IntField(pk=True)
+    emoji_id = fields.BigIntField()
+    label = fields.CharField(max_length=256)
+    role_ids = ArrayField()
+    reaction_id = fields.OneToOneField('models.StaffReaction')
 
-    reaction_role_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    emoji_id = db.Column(db.BigInteger())
-    label = db.Column(db.Text())
-    description = db.Column(db.Text(), default="")
-    role_id = db.Column(db.BigInteger())
-    positive = db.Column(db.Boolean(), default=False)
-    reaction_id = db.Column(db.Integer(), db.ForeignKey(StaffReaction.reaction_id))
+class StaffPunishment(Model):
+    class Meta():
+        table = "punishment"
 
-class StaffButtonRole(db.Model):
-    __tablename__ = "button_role"
-    __table_args__ = {"schema": "staff"}
-
-    button_role_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    emoji_id = db.Column(db.BigInteger())
-    label = db.Column(db.Text())
-    role_ids = db.Column(db.ARRAY(db.BigInteger()))
-    reaction_id = db.Column(db.Integer(), db.ForeignKey(StaffReaction.reaction_id))
-
-class StaffPunishment(db.Model):
-    __tablename__ = "punishment"
-    __table_args__ = {"schema": "staff"}
-
-    punishment_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    punishment_type = db.Column(db.Enum(PunishmentType, schema="staff"))
-    user_display = db.Column(db.Text())
-    user_id = db.Column(db.BigInteger())
-    staff_display = db.Column(db.Text())
-    staff_id = db.Column(db.BigInteger())
-    reason = db.Column(db.Text())
-    redacted = db.Column(db.Boolean())
-    message_id = db.Column(db.BigInteger())
-    message_staff_id = db.Column(db.BigInteger())
-    expiry = db.Column(db.DateTime())
+    punishment_id = fields.IntField(pk=True)
+    punishment_type = fields.CharEnumField(PunishmentType)
+    user_display = fields.CharField(max_length=256)
+    user_id = fields.BigIntField()
+    staff_display = fields.CharField(max_length=256)
+    staff_id = fields.BigIntField()
+    reason = fields.CharField(max_length=1024)
+    redacted = fields.BooleanField(default=False)
+    message_id = fields.BigIntField()
+    message_staff_id = fields.BigIntField() 
+    expiry = fields.DatetimeField(null=True)
 
 # Helper Tables
 
-class HelperData(db.Model):
-    __tablename__ = "helper_data"
-    __table_args__ = {"schema": "helper"}
+class HelperMessage(Model):
+    class Meta():
+        table = "helper_message"
 
-    user_id = db.Column(db.BigInteger(), primary_key=True, autoincrement=False)
-    inactive = db.Column(db.Boolean())
-
-class HelperMessage(db.Model):
-    __tablename__ = "helper_message"
-    __table_args__ = {"schema": "helper"}
-
-    helper_message_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    channel_id = db.Column(db.BigInteger())
-    message_id = db.Column(db.BigInteger())
-    role_id = db.Column(db.BigInteger())
+    helper_message_id = fields.IntField(pk=True)
+    channel_id = fields.BigIntField()
+    message_id = fields.BigIntField()
+    role_id = fields.BigIntField()
 
 # Member Tables
 
-class MemberData(db.Model):
-    __tablename__ = "member_data"
-    __table_args__ = {"schema": "member"}
+class MemberRole(Model):
+    class Meta():
+        table = "member_role"
 
-    user_id = db.Column(db.BigInteger(), primary_key=True, autoincrement=False)
-    join_override = db.Column(db.Text())
+    user_id = fields.BigIntField(pk=True)
+    role_ids = ArrayField()
 
-class MemberRole(db.Model):
-    __tablename__ = "role"
-    __table_args__ = {"schema": "member"}
+class MemberOpt(Model):
+    class Meta():
+        table = "member_opt"
 
-    user_role_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    user_id = db.Column(db.BigInteger())
-    role_id = db.Column(db.BigInteger())
+    opt_id = fields.IntField(pk=True)
+    user_id = fields.BigIntField()
+    channel_id = fields.BigIntField()
 
-class MemberOpt(db.Model):
-    __tablename__ = "opt"
-    __table_args__ = {"schema": "member"}
+class MemberReminder(Model):
+    class Meta():
+        table = "member_reminder"
 
-    opt_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    user_id = db.Column(db.BigInteger())
-    channel_id = db.Column(db.BigInteger())
-
-class MemberReminder(db.Model):
-    __tablename__ = "reminder"
-    __table_args__ = {"schema": "member"}
-
-    reminder_id = db.Column(db.Integer(), primary_key=True, autoincrement=True)
-    text = db.Column(db.Text())
-    time = db.Column(db.DateTime())
-    user_id = db.Column(db.BigInteger())
-
-async def db_main():
-    """
-    Create the tables and columns if they don't already exist,
-    """
-
-    await db.set_bind('postgresql+asyncpg://{}:{}@{}:5432/{}'.format(config['db_user'], config['db_password'], config['db_host'], config['db_database']))
-
-    # Creates the schemas
-    for schema_name in schemas_list:
-        sql = f"CREATE SCHEMA IF NOT EXISTS {schema_name}"
-        await db.status(db.text(sql))
+    reminder_id = fields.IntField(pk=True)
+    user_id = fields.BigIntField()
+    message = fields.CharField(max_length=1024)
+    timestamp = fields.DatetimeField(auto_now_add=True)
     
-    await db.gino.create_all()
