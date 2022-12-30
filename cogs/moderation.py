@@ -3,6 +3,8 @@ from typing import Union
 import discord
 from discord.ext import commands
 
+from utils.commands import available_subcommands
+
 
 class Moderation(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -138,8 +140,8 @@ class Moderation(commands.Cog):
         """
         Commands for bulk deletion.
         """
-        #TODO: send available_subcommands from utils.commands
-        pass
+        if not ctx.invoked_subcommand:
+            await available_subcommands(ctx)
     
     @purge.command()
     async def message(self, ctx: commands.Context, number: int):

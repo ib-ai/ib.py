@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 
+from utils.commands import available_subcommands
+
 class Public(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
@@ -10,8 +12,8 @@ class Public(commands.Cog):
         """
         Display a user's avatar.
         """
-        #TODO: send available_subcommands from utils.commands
-        pass
+        if not ctx.invoked_subcommand:
+            await available_subcommands(ctx)
 
     @avatar.command()
     async def guild(self, ctx: commands.Context, member: discord.Member = None):
