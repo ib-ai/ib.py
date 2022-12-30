@@ -4,8 +4,10 @@ from datetime import datetime, timedelta, timezone
 
 import discord
 from discord.ext import commands
+from db.cached import get_guild_data
 
 from db.models import GuildData
+from utils.commands import available_subcommands
 from utils.misc import ordinal
 from utils.checks import admin_command, staff_command, cogify
 from utils.converters import Index
@@ -15,7 +17,7 @@ UTC = timezone(offset=timedelta(), name='UTC')
 
 class UpdatesMessage(commands.Converter):
     async def convert(self, ctx: commands.Context, message_id: str) -> discord.Message:
-        guild_data = await GuildData.get(guild_id = ctx.guild.id)
+        guild_data = await get_guild_data(guild_id = ctx.guild.id)
         updates_channel = ctx.bot.get_channel(guild_data.updates_id)
         update_message = await updates_channel.fetch_message(message_id)
         return update_message
@@ -32,15 +34,7 @@ class Updates(commands.Cog):
         """
         Commands for handling updates.
         """
-        subcmds = []
-        for cmd in ctx.command.commands:
-            try:
-                usable = await cmd.can_run(ctx)
-                if usable:
-                    subcmds.append('`'+cmd.name+'`')
-            except commands.CommandError as e:
-                logging.debug(f'Command "{cmd.name}" check threw error, discarded in {ctx.command.name} group subcommand list.')
-        await ctx.send(f'Available subcommands: {", ".join(subcmds)}.')
+        await available_subcommands(ctx)
     
     @update.command()
     @admin_command()
@@ -50,6 +44,7 @@ class Updates(commands.Cog):
         """
         values = dict(updates_id = channel.id if channel else None)
         await GuildData.update_or_create(values, guild_id = ctx.guild.id)
+        get_guild_data.cache_clear()
         if channel:
             await ctx.send(f'Updates channel set to <#{channel.id}> for this guild.')
         else:
@@ -67,7 +62,7 @@ class Updates(commands.Cog):
         if update2: updates.append(update2)
         if update3: updates.append(update3)
 
-        guild_data = await GuildData.get(guild_id = ctx.guild.id)
+        guild_data = await get_guild_data(guild_id = ctx.guild.id)
         updates_channel = self.bot.get_channel(guild_data.updates_id)
         
         # updates operates by UTC dates
