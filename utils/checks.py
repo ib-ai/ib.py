@@ -1,13 +1,15 @@
-import discord
+from functools import cache
 from discord.ext import commands
+from db.cached import get_guild_data
 
 def cogify(check):
     return lambda self, ctx: check.predicate(ctx)
 
-
-def is_moderator(ctx: commands.Context):
-    moderator_role_id = None  # TODO: retrieve moderator role ID
-    return any(role.id == moderator_role_id for role in ctx.author.roles)
+async def is_moderator(ctx: commands.Context):
+    assert await commands.guild_only().predicate(ctx)
+    guild_data = await get_guild_data(ctx.guild.id)
+    moderator_role_id = guild_data.moderator_id if guild_data else None
+    return any(role.id == moderator_role_id for role in ctx.author.roles) if moderator_role_id else False
 
 
 def admin_command():
