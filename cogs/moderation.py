@@ -2,6 +2,7 @@ from typing import Union
 
 import discord
 from discord.ext import commands
+from discord.app_commands import describe
 
 from utils.commands import available_subcommands
 
@@ -96,6 +97,7 @@ class Moderation(commands.Cog):
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
     @commands.hybrid_command()
+    @describe(user='User to ban', reason='Reason for ban')
     async def blacklist(self, ctx: commands.Context, user: discord.User, *, reason: str):
         """
         Blacklist a user that is not in the server.
@@ -140,8 +142,7 @@ class Moderation(commands.Cog):
         """
         Commands for bulk deletion.
         """
-        if not ctx.invoked_subcommand:
-            await available_subcommands(ctx)
+        await available_subcommands(ctx)
     
     @purge.command()
     async def message(self, ctx: commands.Context, number: int):

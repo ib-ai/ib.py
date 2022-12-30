@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord.app_commands import describe
 
 from utils.commands import available_subcommands
 
@@ -12,10 +13,10 @@ class Public(commands.Cog):
         """
         Display a user's avatar.
         """
-        if not ctx.invoked_subcommand:
-            await available_subcommands(ctx)
+        await available_subcommands(ctx)
 
     @avatar.command()
+    @describe(member='The user to display the avatar of.')
     async def guild(self, ctx: commands.Context, member: discord.Member = None):
         """
         Display a user\'s guild-specific avatar, if available.
@@ -31,6 +32,7 @@ class Public(commands.Cog):
         await ctx.send(embed=embed)
 
     @avatar.command(name='global')
+    @describe(member='The user to display the avatar of.')
     async def _global(self, ctx: commands.Context, member: discord.Member = None):
         """
         Display a user\'s global avatar.
@@ -42,6 +44,7 @@ class Public(commands.Cog):
         await ctx.send(embed=embed)
     
     @commands.hybrid_command()
+    @describe(user='The user to display the banner of.')
     async def banner(self, ctx: commands.Context, user: discord.User = None):
         """
         Display a user's banner.
@@ -78,6 +81,7 @@ class Public(commands.Cog):
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
     @commands.hybrid_command(aliases=['ui'])
+    @describe(member='The user to display the information of.')
     async def userinfo(self, ctx: commands.Context, member: discord.Member = None):
         """
         Present user information.
