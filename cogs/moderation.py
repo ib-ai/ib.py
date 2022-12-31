@@ -137,13 +137,12 @@ class Moderation(commands.Cog):
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @commands.group()
+    @commands.group(invoke_without_command=True)
     async def purge(self, ctx: commands.Context):
         """
         Commands for bulk deletion.
         """
-        if not ctx.invoked_subcommand:
-            await available_subcommands(ctx)
+        await available_subcommands(ctx)
     
     @purge.command()
     async def message(self, ctx: commands.Context, number: int):
