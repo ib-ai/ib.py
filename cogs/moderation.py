@@ -2,6 +2,9 @@ from typing import Union
 
 import discord
 from discord.ext import commands
+from discord.app_commands import describe
+
+from utils.commands import available_subcommands
 
 
 class Moderation(commands.Cog):
@@ -92,14 +95,19 @@ class Moderation(commands.Cog):
         Set a role for mutes.
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
-
     
     @commands.hybrid_command()
-    async def blacklist(self, ctx: commands.Context):
+    @describe(user='User to ban', reason='Reason for ban')
+    async def blacklist(self, ctx: commands.Context, user: discord.User, *, reason: str):
         """
-        Ban a user that is not in the server.
+        Blacklist a user that is not in the server.
         """ 
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        if user in ctx.guild.members:
+            await ctx.send("User is in the server. Please use Discord's built-in moderation tools.")
+            return
+
+        await ctx.guild.ban(user, reason=reason)
+        await ctx.send(f'Banned {user} for `{reason}`.')
     
     @commands.hybrid_command()
     async def expire(self, ctx: commands.Context):
@@ -129,26 +137,62 @@ class Moderation(commands.Cog):
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
     
-    @commands.hybrid_group()
+    @commands.group(invoke_without_command=True)
     async def purge(self, ctx: commands.Context):
         """
         Commands for bulk deletion.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        await available_subcommands(ctx)
     
     @purge.command()
-    async def message(self, ctx: commands.Context):
+    async def message(self, ctx: commands.Context, number: int):
         """
         Bulk delete messages.
         """ 
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        async for message in ctx.channel.history(limit=number):
+            try:
+                await message.delete()
+            except discord.Forbidden:
+                await ctx.send('I do not have permission to delete messages.')
+                return
+            except discord.HTTPException:
+                await ctx.send('An error occurred while deleting messages.')
+                return
+        await ctx.send(f'Deleted {number} messages.', delete_after=5)
     
     @purge.command()
-    async def reaction(self, ctx: commands.Context):
+    async def reaction(self, ctx: commands.Context, channel: discord.TextChannel, message_id: int, emoji: discord.Emoji):
         """
         Bulk delete reactions.
         """ 
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        try:
+            message = await channel.fetch_message(message_id)
+        except discord.NotFound:
+            await ctx.send('Message not found.')
+            return
+        except discord.Forbidden:
+            await ctx.send('I do not have permission to read messages in that channel.')
+            return
+        except discord.HTTPException:
+            await ctx.send('An error occurred while fetching the message.')
+            return
+
+        try:
+            await message.clear_reaction(emoji)
+        except discord.Forbidden:
+            await ctx.send('I do not have permission to delete reactions.')
+            return
+        except discord.NotFound:
+            await ctx.send('The emoji you specifiied was not found.')
+            return
+        except TypeError:
+            await ctx.send('The emoji you specified is invalid.')
+            return
+        except discord.HTTPException:
+            await ctx.send('An error occurred while deleting reactions.')
+            return
+        
+        await ctx.send(f'Deleted reactions to {message_id} with emoji {emoji}.')
 
     @commands.hybrid_command()
     async def reason(self, ctx: commands.Context):
@@ -156,7 +200,6 @@ class Moderation(commands.Cog):
         Set a reason for a punishment case.
         """ 
         raise NotImplementedError('Command requires implementation and permission set-up.')
-
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Moderation(bot))
