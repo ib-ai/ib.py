@@ -28,12 +28,8 @@ Switch to the rewrite branch:
 git switch rewrite
 ```
 
-2. To run this project, you need to have [Docker](https://docs.docker.com/get-docker/) and [Python 3.11](https://www.python.org/downloads/) installed.
+2. To run this project, you need to have [Docker](https://docs.docker.com/get-docker/) and [Python 3.11](https://www.python.org/downloads/) installed. Click on either of those links to get Docker or Python respectively.
 
-Alternatively, you can install `Docker` by entering:
-```
-brew install docker
-```
 
 3. Install all requirements by creating a virtual environment and installing dependencies:
 
@@ -49,9 +45,10 @@ to the server by clicking the `URL Generator` tab under the `OAuth2` tab. Paste 
 a web window and accept the bot's invite.
 
 
-5. Copy the `config.example.json`, rename to `config.json`, and replace the relevant values.
+5. Rename the `config.example.json` to `config.json`, and replace the relevant values.
 The `token` and `application_id` of your application can be found inside your [Discord developer portal](https://discord.com/app).
-Example `config.json`:
+
+Here is an example of a `config.json` file (not including the `token` and `application_id`, since that is for your eyes only):
 
 ```
 {
@@ -68,18 +65,12 @@ Example `config.json`:
 
 If you want to inject the config at runtime using environment variables, you need not replace the values in `config.json`.
 
-6. Open the docker application if you had not installed it with homebrew. Run the docker container in the `ib.py` directory with the following command:
+6. Open the docker application on your machine. Run the docker container in the `ib.py` directory with the following command:
 
 ```
 docker-compose -f docker-compose.postgres.yml up --build
 ```
 
-If you are encountering issues saying `cannot connect to the Docker daemon`, try the following:
-```
-brew install colima
-colima start
-docker ps -a
-```
 
 7. Run the `bot.py` file in order to connect your bot to the server:
 
