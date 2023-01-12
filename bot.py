@@ -7,7 +7,7 @@ from db.db import db_init
 from utils import config
 
 logger = logging.getLogger()
-logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
 logger.setLevel(logging.DEBUG)  # TODO: Change back to logging.INFO
 
 intents = discord.Intents.all()
@@ -63,6 +63,10 @@ class IBpy(commands.Bot):
         logger.info(f"Bot \"{bot_name}\" is now connected.")
         logger.info(f"Currently serving {guild_number} guilds.")
         logger.info(f"Described as \"{bot_description}\".")
+
+        Reminder = self.get_cog('Reminder')
+        await Reminder.schedule_existing_reminders()
+        logger.info(f'Existing reminders queued.')
     
     async def on_command_error(self, ctx: commands.Context, exception) -> None:
         # sends the error message as a discord message

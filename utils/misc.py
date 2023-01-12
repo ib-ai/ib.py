@@ -1,8 +1,24 @@
-from typing import Union
-
+import asyncio
 from datetime import datetime, timedelta
+
 from tortoise import timezone
-import discord
+
+
+DEGENERACY_DELAY = timedelta(seconds=1)  # when datetime is in the past, a small amount of time is slept for regardless
+MAX_DELTA = timedelta(days=40)  # asyncio.sleep is faulty for longer periods of time
+async def long_sleep_until(terminus: datetime):
+    """
+    Sleep until the datetime object given.
+    If in the past, a DEGENERACY_DELAY amount is slept.
+    """
+    now = timezone.now()
+    if terminus < now:
+        terminus = now + DEGENERACY_DELAY
+    while terminus - now > MAX_DELTA:
+        await asyncio.sleep(MAX_DELTA.total_seconds)
+        now = timezone.now()
+    await asyncio.sleep((terminus - now).total_seconds())
+
 
 def discord_timestamp_string_format(dt: datetime, fmt: str = ''):
     return f'<t:{int(dt.timestamp())}{f":{fmt}" if fmt else ""}>'

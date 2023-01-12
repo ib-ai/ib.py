@@ -29,7 +29,6 @@ def TimestampConverter(arg: str):
     """
     Convert string into a POSIX timestamp.
     """
-    print(arg)
     now = timezone.now()
     now_timestamp = now.timestamp()
     try:

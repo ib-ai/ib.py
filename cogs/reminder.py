@@ -1,8 +1,6 @@
 import asyncio
 import logging
-from typing import Mapping, Union
-from datetime import datetime, timedelta
-from functools import partial
+from typing import Mapping
 
 from tortoise import timezone
 import discord
@@ -11,10 +9,9 @@ from db.models import MemberReminder
 
 from utils.commands import available_subcommands
 from utils.converters import TimestampConverter
-from utils.misc import \
+from utils.misc import DEGENERACY_DELAY, long_sleep_until, \
     discord_timestamp_string_format as dts_fmt
-from utils.embeds import paginated_embed_menus
-from utils.pagination import PaginationView
+from utils.pagination import paginated_embed_menus, PaginationView
 
 
 logger = logging.getLogger(__name__)
@@ -22,8 +19,6 @@ logger.setLevel(logging.DEBUG)  # TODO: Change back to logging.INFO
 
 
 class Reminder(commands.Cog):
-    DORMANCY_DELAY = timedelta(seconds=1)  # on bot start-up, seconds of delay between scheduled reminders
-    MAX_DELTA = timedelta(days=40)  # asyncio.sleep is faulty for longer periods of time
 
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
@@ -34,18 +29,9 @@ class Reminder(commands.Cog):
         Sleep until reminder's timestamp, then send the message to the user and delete the timer.
         If cancelled, reminder deletion must be handled elsewhere.
         """
-        id = reminder.reminder_id
         message = reminder.message
         terminus = reminder.timestamp
-        now = timezone.now()
-        if terminus < now:
-            terminus = now + self.DORMANCY_DELAY
-        while terminus - now > self.MAX_DELTA:
-            logger.debug(f'Sleeping for MAX_DELTA: {id}')
-            await asyncio.sleep(self.MAX_DELTA.total_seconds)
-            now = timezone.now()
-        logger.debug(f'Sleeping for {terminus - now}: {id}')
-        await asyncio.sleep((terminus - now).total_seconds())
+        await long_sleep_until(terminus)
         await user.send(f'You asked me to remind you: {message}')
         await reminder.delete()
     
@@ -61,14 +47,15 @@ class Reminder(commands.Cog):
     async def schedule_existing_reminders(self):
         """
         Schedule all timers existing in the database. To be used on bot start-up.
-        If a reminder's time has passed, it is scheduled to send with DORMANCY_DELAY (to avoid rate-limiting).
+        If a reminder's time has passed, it is scheduled to send with DEGENERACY_DELAY (to avoid rate-limiting).
         """
         reminders = await MemberReminder.all()
         if not reminders:
             logger.debug('No existing reminders found.')
         
+        # on bot start-up, add a bit of delay between scheduled reminders (to avoid rate-limiting)
         dormant = asyncio.create_task(
-            asyncio.sleep(self.DORMANCY_DELAY.total_seconds())
+            asyncio.sleep(DEGENERACY_DELAY.total_seconds())
         )
         async def schedule_once_completed(last: asyncio.Task, user: discord.User, reminder: MemberReminder):
             await asyncio.wait_for(last, timeout=None)
@@ -145,9 +132,8 @@ class Reminder(commands.Cog):
         if ctx.author.accent_color: embed_dict['color'] = ctx.author.accent_color.value
         names = [f'[ID: {reminder.reminder_id}] {dts_fmt(reminder.timestamp)}' for reminder in user_reminders]
         values = [reminder.message for reminder in user_reminders]
-        embeds = paginated_embed_menus(names, values, embed_dict=embed_dict)
-        # embeds = EmbedGenerator(entries=entries, description="Here is a list of your active reminders.", step=10).build_embed()
 
+        embeds = paginated_embed_menus(names, values, embed_dict=embed_dict)
         embed, view = await PaginationView(ctx, embeds).return_paginated_embed_view()
         await ctx.send(embed=embed, view=view)
 
