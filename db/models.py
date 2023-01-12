@@ -198,5 +198,4 @@ class MemberReminder(Model):
     reminder_id = fields.IntField(pk=True)
     user_id = fields.BigIntField()
     message = fields.CharField(max_length=1024)
-    timestamp = fields.DatetimeField(auto_now_add=True)
-    
+    timestamp = fields.DatetimeField()
