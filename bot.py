@@ -51,11 +51,7 @@ class IBpy(commands.Bot):
                 logger.warning(e)
             except commands.errors.ExtensionFailed as e:
                 logger.error(e)
-        
         logger.info("Loaded all cogs.")
-
-        await self.get_cog('Reminder').schedule_existing_reminders()
-        logger.info(f'Existing reminders queued.')
     
     async def on_ready(self):
         await bot.change_presence(activity=discord.Game(name=f"{config.prefix}help"), status=discord.Status.do_not_disturb)
@@ -67,6 +63,9 @@ class IBpy(commands.Bot):
         logger.info(f"Bot \"{bot_name}\" is now connected.")
         logger.info(f"Currently serving {guild_number} guilds.")
         logger.info(f"Described as \"{bot_description}\".")
+
+        await self.get_cog('Reminder').schedule_existing_reminders()
+        logger.info(f'Existing reminders queued.')
     
     async def on_command_error(self, ctx: commands.Context, exception) -> None:
         # sends the error message as a discord message

@@ -4,11 +4,12 @@ from typing import Mapping
 
 from tortoise import timezone
 import discord
+from discord import app_commands
 from discord.ext import commands
 from db.models import MemberReminder
 
 from utils.commands import available_subcommands
-from utils.converters import TimestampConverter
+from utils.converters import DatetimeConverter
 from utils.misc import DEGENERACY_DELAY, long_sleep_until, \
     discord_timestamp_string_format as dts_fmt
 from utils.pagination import paginated_embed_menus, PaginationView
@@ -63,9 +64,12 @@ class Reminder(commands.Cog):
 
         async with asyncio.TaskGroup() as tg:
             for reminder in reminders:
+                if reminder.reminder_id in self.active:
+                    logger.debug('Reminder already active. (skipping)')
+                    continue
                 user = self.bot.get_user(reminder.user_id)
                 if not user:
-                    logger.warning(f'User {reminder.user_id} not found.')
+                    logger.warning(f'User {reminder.user_id} not found. (skipping)')
                     continue
 
                 if reminder.timestamp <= timezone.now():
@@ -87,11 +91,11 @@ class Reminder(commands.Cog):
         await available_subcommands(ctx)
     
     @reminder.command(aliases=['add'])
-    async def create(self, ctx: commands.Context, terminus: TimestampConverter, *, message):
+    @app_commands.rename(terminus='duration')
+    async def create(self, ctx: commands.Context, terminus: DatetimeConverter, *, message):
         """
         Create a reminder.
         """
-        # NOTE: "timestamp" is a python datetime object
         values = dict(
             user_id = ctx.author.id,
             message = message,

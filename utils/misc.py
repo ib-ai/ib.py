@@ -1,3 +1,4 @@
+import re
 import asyncio
 from datetime import datetime, timedelta
 
@@ -20,33 +21,26 @@ async def long_sleep_until(terminus: datetime):
     await asyncio.sleep((terminus - now).total_seconds())
 
 
-def discord_timestamp_string_format(dt: datetime, fmt: str = ''):
-    return f'<t:{int(dt.timestamp())}{f":{fmt}" if fmt else ""}>'
+def discord_timestamp_string_format(dt: datetime, fmt: str = 'f') -> str:
+    return f'<t:{int(dt.timestamp())}:{fmt}>'
 
 ENDMONTH_BUFFER = timedelta(days=5)
-def parse_time(s) -> timedelta:
+CODES = {'w': 'weeks', 'd': 'days', 'h': 'hours', 'm': 'minutes', 's': 'seconds'}
+def parse_time(s: str) -> timedelta:
     """
-    Convert short-hand time string into a python timedelta object.
+    Convert short-hand duration time string into a python timedelta object.
     """
+    if not re.fullmatch('(?:\d+\D+)*', s):
+        raise ValueError()
     total_delta = timedelta()
-    N = len(s)
-    key = ''
-    value = ''
-    for i, c in enumerate(s):
-        if not c.isnumeric():
-            key += c
-            if i < N-1:
-                continue
-        if not key:
-            value += c
-            continue
+    for value, key in re.findall('(\d+)(\D+)', s):
         value = int(value)
-        if not value:
-            continue
-        if key.startswith('y'):  # implemented this way to preserve day and month of year
-            now = timezone.now()
+        if key.startswith('y'):
+            # python timedelta objects don't work with years
+            # implemented this way to preserve day and month of year
+            now = timezone.now() + total_delta
             if now.month == 2 and now.day == 29:  # for when you add 1 year to the 29th of February
-                now -= ENDMONTH_BUFFER
+                now -= ENDMONTH_BUFFER            # subtract a few days so datetime initialization doesn't throw errors
             for i in range(value):
                 next = datetime(
                     year = now.year + 1,
@@ -60,10 +54,12 @@ def parse_time(s) -> timedelta:
                 )
                 total_delta += next - now
                 now = next
-        elif key.startswith('mo'):  # implemented this way to preserve the day of month
-            now = timezone.now()
-            if now.day >= 28:
-                now -= ENDMONTH_BUFFER  # for when you add 1 month to the 31st of January
+        elif key.startswith('mo'):
+            # python timedelta objects don't work with months
+            # implemented this way to preserve the day of month
+            now = timezone.now() + total_delta
+            if now.day >= 28:           # for when you add 1 month to the 31st of January, and similar
+                now -= ENDMONTH_BUFFER  # subtract a few days so datetime initialization doesn't throw errors
             for i in range(value):
                 year = now.year
                 month = now.month
@@ -82,20 +78,9 @@ def parse_time(s) -> timedelta:
                 )
                 total_delta += next - now
                 now = next
-        elif key.startswith('w'):
-            total_delta += timedelta(weeks=value)
-        elif key.startswith('d'):
-            total_delta += timedelta(days=value)
-        elif key.startswith('h'):
-            total_delta += timedelta(hours=value)
-        elif key.startswith('m'):
-            total_delta += timedelta(minutes=value)
-        elif key.startswith('s'):
-            total_delta += timedelta(seconds=value)
         else:
-            raise ValueError('Invalid time format.')
-        key = ''
-        value = c
+            # remaining cases are handled with "codes" dictionary
+            total_delta += timedelta(**{CODES[key[0]]: value})
     return total_delta
 
 

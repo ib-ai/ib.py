@@ -25,9 +25,9 @@ def RegexConverter(arg: str):
         raise commands.BadArgument("The regex pattern provided is invalid.")
     return arg
 
-def TimestampConverter(arg: str):
+def DatetimeConverter(arg: str):
     """
-    Convert string into a POSIX timestamp.
+    Convert string (timestamp or duration into the future) into a python datetime object.
     """
     now = timezone.now()
     now_timestamp = now.timestamp()
@@ -36,17 +36,15 @@ def TimestampConverter(arg: str):
         if match is None:
             timestamp = int(arg)
         else:
-            timestamp = match.group(1)
+            timestamp = int(match.group(1))
         if timestamp < now_timestamp:
             raise commands.BadArgument("Timestamp cannot correspond to a time in the past.")
-        if timestamp > 8640000000000:  # for some reason this is the maximum??
-            raise commands.BadArgument("Timestamp value is too large.")
-        return datetime.fromtimestamp(timestamp, tz=timezone.get_timezone())
-    except ValueError as e:
+        return datetime.fromtimestamp(timestamp, tz=timezone.get_default_timezone())
+    except (ValueError, OSError, OverflowError) as e:
         logging.debug('Direct timestamp conversion failed.')
     
     try:
         delta = parse_time(arg)
         return now + delta
-    except ValueError as e:
-        raise commands.BadArgument(e)
+    except (ValueError, KeyError) as e:
+        raise commands.BadArgument('Invalid duration format.')
