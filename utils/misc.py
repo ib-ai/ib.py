@@ -15,7 +15,7 @@ async def long_sleep_until(terminus: datetime):
     if terminus < now:
         terminus = now + DEGENERACY_DELAY
     while terminus - now > MAX_DELTA:
-        await asyncio.sleep(MAX_DELTA.total_seconds)
+        await asyncio.sleep(MAX_DELTA.total_seconds())
         now = timezone.now()
     await asyncio.sleep((terminus - now).total_seconds())
 
@@ -56,7 +56,7 @@ def parse_time(s) -> timedelta:
                     minute = now.minute,
                     second = now.second,
                     microsecond = now.microsecond,
-                    tzinfo = timezone.get_timezone(),
+                    tzinfo = timezone.get_default_timezone(),
                 )
                 total_delta += next - now
                 now = next
@@ -78,7 +78,7 @@ def parse_time(s) -> timedelta:
                     minute = now.minute,
                     second = now.second,
                     microsecond = now.microsecond,
-                    tzinfo = timezone.get_timezone(),
+                    tzinfo = timezone.get_default_timezone(),
                 )
                 total_delta += next - now
                 now = next
