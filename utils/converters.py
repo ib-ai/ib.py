@@ -1,11 +1,13 @@
 import re
-import logging
 from datetime import datetime
 from tortoise import timezone
 
 from discord.ext import commands
 
-from utils.misc import parse_time
+from utils.time import parse_time
+
+import logging
+logger = logging.getLogger(__name__)
 
 def Index(arg: str):
     """
@@ -41,7 +43,7 @@ def DatetimeConverter(arg: str):
             raise commands.BadArgument("Timestamp cannot correspond to a time in the past.")
         return datetime.fromtimestamp(timestamp, tz=timezone.get_default_timezone())
     except (ValueError, OSError, OverflowError) as e:
-        logging.debug('Direct timestamp conversion failed.')
+        logger.debug('Direct timestamp conversion failed.')
     
     try:
         delta = parse_time(arg)

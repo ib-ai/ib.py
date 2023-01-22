@@ -1,17 +1,21 @@
 import discord
 from discord.ext import commands
-import logging
-import os
 
 from db.db import db_init
 from utils import config
 
-logger = logging.getLogger()
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+
+import logging
+logger = logging.getLogger('bot')
 logger.setLevel(logging.DEBUG)  # TODO: Change back to logging.INFO
 
-intents = discord.Intents.all()
+cogs_logger = logging.getLogger('cogs')
+cogs_logger.setLevel(logging.DEBUG)  # TODO: Change back to logging.INFO
 
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+
+
+intents = discord.Intents.all()
 INITIAL_COGS = (
     'dev',
     'embeds',
@@ -27,7 +31,6 @@ INITIAL_COGS = (
     'updates',
     'voting',
 )
-
 class IBpy(commands.Bot):
     def __init__(self):
         super().__init__(

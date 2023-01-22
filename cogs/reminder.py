@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from typing import Mapping
 
 from tortoise import timezone
@@ -10,14 +9,11 @@ from db.models import MemberReminder
 
 from utils.commands import available_subcommands
 from utils.converters import DatetimeConverter
-from utils.misc import DEGENERACY_DELAY, long_sleep_until, \
-    discord_timestamp_string_format as dts_fmt
+from utils.time import DEGENERACY_DELAY, long_sleep_until, format_timestamp
 from utils.pagination import paginated_embed_menus, PaginationView
 
-
+import logging
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)  # TODO: Change back to logging.INFO
-
 
 class Reminder(commands.Cog):
 
@@ -74,14 +70,14 @@ class Reminder(commands.Cog):
 
                 if reminder.timestamp <= timezone.now():
                     dormant = tg.create_task(schedule_once_completed(dormant, user, reminder))
-                    logger.debug(f'Dormant timer running: {reminder}')
+                    logger.debug(f'Dormant timer running: {reminder.reminder_id}')
                 else:
                     task = asyncio.create_task(self.handle_reminder(user, reminder))
                     self.active[reminder.reminder_id] = task
                     task.add_done_callback(self.removal_callback(reminder.reminder_id))
-                    logger.debug(f'Active timer running: {reminder}')
+                    logger.debug(f'Active timer running: {reminder.reminder_id}')
 
-                logger.debug(f'Active: {len(self.active)}')
+                logger.debug(f'Active reminders: {len(self.active)}')
 
     @commands.hybrid_group()
     async def reminder(self, ctx: commands.Context):
@@ -106,7 +102,7 @@ class Reminder(commands.Cog):
         task = asyncio.create_task(self.handle_reminder(ctx.author, reminder))
         self.active[reminder.reminder_id] = task
         task.add_done_callback(self.removal_callback(reminder.reminder_id))
-        await ctx.send(f'Reminder set for {dts_fmt(terminus)} ({dts_fmt(terminus, "R")}).')
+        await ctx.send(f'Reminder set for {format_timestamp(terminus)} ({format_timestamp(terminus, "R")}).')
 
     @reminder.command(aliases=['remove'])
     async def delete(self, ctx: commands.Context, id: int):
@@ -116,6 +112,7 @@ class Reminder(commands.Cog):
         reminder = await MemberReminder.get_or_none(reminder_id = id)
         if not reminder:
             await ctx.send(f'Invalid reminder ID!')
+            return
         task = self.active[id]
         task.cancel()
         
@@ -134,7 +131,7 @@ class Reminder(commands.Cog):
             description = f'Here is a list of your active reminders.',
         )
         if ctx.author.accent_color: embed_dict['color'] = ctx.author.accent_color.value
-        names = [f'[ID: {reminder.reminder_id}] {dts_fmt(reminder.timestamp)}' for reminder in user_reminders]
+        names = [f'[ID: {reminder.reminder_id}] {format_timestamp(reminder.timestamp)}' for reminder in user_reminders]
         values = [reminder.message for reminder in user_reminders]
 
         embeds = paginated_embed_menus(names, values, embed_dict=embed_dict)
