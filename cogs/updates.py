@@ -1,4 +1,3 @@
-import logging
 from typing import Optional
 from datetime import datetime, timedelta, timezone
 
@@ -11,6 +10,9 @@ from utils.commands import available_subcommands
 from utils.misc import ordinal
 from utils.checks import admin_command, staff_command, cogify
 from utils.converters import Index
+
+import logging
+logger = logging.getLogger(__name__)
 
 # updates operates by UTC dates
 UTC = timezone(offset=timedelta(), name='UTC')
@@ -55,7 +57,7 @@ class Updates(commands.Cog):
         """
         Create (up to 3) update entries.
         """
-        logging.debug(f'Update create - {update1}, {update2}, {update3}')
+        logger.debug(f'Update create - {update1}, {update2}, {update3}')
 
         # note: currently, discord does not support variable-length arguments in hybrid commands
         updates = [update1]
@@ -89,7 +91,7 @@ class Updates(commands.Cog):
         """
         if not entries:
             raise commands.BadArgument('Please provide a valid update entry. (Updates entries must be a positive integer.)')
-        logging.debug(f'Update delete - {entries}, {message.content}')
+        logger.debug(f'Update delete - {entries}, {message.content}')
 
         # note: the zeroth entry is always the date
         # update entry indices are supplied with 1-based indexing

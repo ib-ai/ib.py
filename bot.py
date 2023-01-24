@@ -1,17 +1,21 @@
 import discord
 from discord.ext import commands
-import logging
-import os
 
 from db.db import db_init
 from utils import config
 
-logger = logging.getLogger()
-logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+
+import logging
+logger = logging.getLogger('bot')
 logger.setLevel(logging.DEBUG)  # TODO: Change back to logging.INFO
 
-intents = discord.Intents.all()
+cogs_logger = logging.getLogger('cogs')
+cogs_logger.setLevel(logging.DEBUG)  # TODO: Change back to logging.INFO
 
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+
+
+intents = discord.Intents.all()
 INITIAL_COGS = (
     'dev',
     'embeds',
@@ -27,7 +31,6 @@ INITIAL_COGS = (
     'updates',
     'voting',
 )
-
 class IBpy(commands.Bot):
     def __init__(self):
         super().__init__(
@@ -38,6 +41,8 @@ class IBpy(commands.Bot):
         )
     
     async def setup_hook(self):
+        await db_init()
+
         for cog in INITIAL_COGS:
             try:
                 await bot.load_extension(f'cogs.{cog}')
@@ -49,12 +54,10 @@ class IBpy(commands.Bot):
                 logger.warning(e)
             except commands.errors.ExtensionFailed as e:
                 logger.error(e)
-        
         logger.info("Loaded all cogs.")
     
     async def on_ready(self):
         await bot.change_presence(activity=discord.Game(name=f"{config.prefix}help"), status=discord.Status.do_not_disturb)
-        await db_init()
 
         bot_name = bot.user.name
         bot_description = bot.description
@@ -63,6 +66,9 @@ class IBpy(commands.Bot):
         logger.info(f"Bot \"{bot_name}\" is now connected.")
         logger.info(f"Currently serving {guild_number} guilds.")
         logger.info(f"Described as \"{bot_description}\".")
+
+        await self.get_cog('Reminder').schedule_existing_reminders()
+        logger.info(f'Existing reminders queued.')
     
     async def on_command_error(self, ctx: commands.Context, exception) -> None:
         # sends the error message as a discord message
