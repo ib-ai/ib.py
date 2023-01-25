@@ -9,7 +9,7 @@ from utils.time import parse_time
 import logging
 logger = logging.getLogger(__name__)
 
-def Index(arg: str):
+def Index(arg: str) -> int:
     """
     Checks if provided index is a valid and positive integer.
     """
@@ -18,7 +18,7 @@ def Index(arg: str):
         raise commands.BadArgument('Index must be a positive integer.')
     return n
 
-def RegexConverter(arg: str):
+def RegexConverter(arg: str) -> str:
     """
     Checks if provided regex pattern is valid.
     """
@@ -50,3 +50,16 @@ def DatetimeConverter(arg: str):
         return now + delta
     except (ValueError, KeyError) as e:
         raise commands.BadArgument('Invalid duration format.')
+
+class ListConverter(commands.Converter):
+    async def convert(self, ctx: commands.Context, argument: str) -> list[int] | str:
+        """
+        Checks if provided list can be separated and parsed.
+        """
+        if argument == '*':
+            return '*'
+
+        try: 
+            return list(map(int, re.split(';|,|; |, ', argument)))
+        except ValueError:
+            raise commands.BadArgument("The list provided is invalid.")

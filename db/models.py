@@ -32,7 +32,8 @@ class GuildData(Model):
     helper_id = fields.BigIntField(null=True)
     filtering = fields.BooleanField(default=False)
     removal = fields.BooleanField(default=False)
-    monitoring = fields.BooleanField(default=False)
+    monitoring_user = fields.BooleanField(default=False)
+    monitoring_message = fields.BooleanField(default=False)
     monitor_user_log_id = fields.BigIntField(null=True)
     monitor_message_log_id = fields.BigIntField(null=True)
 
@@ -113,13 +114,24 @@ class StaffMonitorUser(Model):
 
     monitor_user_id = fields.IntField(pk=True)
     user_id = fields.BigIntField()
-    
+
+class StaffMonitorMessageGroups(Model):
+    class Meta():
+        table = "monitor_message_groups"
+
+    group_id = fields.IntField(pk=True)
+    name = fields.CharField(max_length=256)
+    disabled = fields.BooleanField(default=False)
+    monitor_messages: fields.ManyToManyRelation["StaffMonitorMessage"] = fields.ManyToManyField('models.StaffMonitorMessage', related_name="groups")
+
 class StaffMonitorMessage(Model):
     class Meta():
         table = "monitor_message"
 
     monitor_message_id = fields.IntField(pk=True)
+    disabled = fields.BooleanField(default=False)
     message = fields.CharField(max_length=1000)
+    groups: fields.ManyToManyRelation[StaffMonitorMessageGroups]    
 
 class StaffFilter(Model):
     class Meta():
