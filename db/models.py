@@ -131,7 +131,6 @@ class StaffMonitorMessage(Model):
     monitor_message_id = fields.IntField(pk=True)
     disabled = fields.BooleanField(default=False)
     message = fields.CharField(max_length=1000)
-    groups: fields.ManyToManyRelation[StaffMonitorMessageGroups]    
 
 class StaffFilter(Model):
     class Meta():
