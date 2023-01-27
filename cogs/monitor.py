@@ -409,7 +409,7 @@ async def create_formatted_group_message(monitor_groups: list[StaffMonitorMessag
     formatted_messages = []
     
     for group in monitor_groups:
-        sorted_messages = sorted(await group.monitor_messages.all(), key=lambda x: x.monitor_message_id)
+        sorted_messages = await group.monitor_messages.all().order_by('monitor_message_id')
         message_lines = [f'[ID: {pattern.monitor_message_id}] {pattern.message}' for pattern in sorted_messages]
 
         # chr(10) returns \n as backslashes cannot be used in f-string expressions
