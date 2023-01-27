@@ -294,15 +294,14 @@ class Monitor(commands.Cog):
 
             db_monitor_messages.append(db_monitor_message)
         
-        monitor_group = await StaffMonitorMessageGroups.filter(name=name).get_or_none()
-
-        if not monitor_group:
-            monitor_group = await StaffMonitorMessageGroups.create(name=name)
+        monitor_group = (await StaffMonitorMessageGroups.get_or_create(name=name))[0]
 
         await monitor_group.monitor_messages.add(*db_monitor_messages)
 
-        logger.debug(f"Added messages {monitor_messages} to group {name}.")
-        await ctx.send(f"Messages `{monitor_messages}` have been successfully added to group `{name}`.")
+        sorted_group_messages = [message.monitor_message_id async for message in monitor_group.monitor_messages.order_by('monitor_message_id')]
+
+        logger.debug(f"Added messages {monitor_messages} to group {name}. Currently contains: {sorted_group_messages}.")
+        await ctx.send(f"Messages `{monitor_messages}` have been successfully added to group `{name}`. This group currently has the following messages: `{sorted_group_messages}`.")
 
     @group.command(name='delete')
     async def group_delete(self, ctx: commands.Context, name: str, monitor_messages: Optional[ListConverter] = None):
