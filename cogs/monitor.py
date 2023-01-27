@@ -261,14 +261,7 @@ class Monitor(commands.Cog):
         await guild_data.save()
         get_guild_data.cache_clear()
 
-        confirmation_message = f"Monitoring is now enabled for only {'messages' if guild_data.monitoring_message else 'users'} in this guild."
-
-        if guild_data.monitoring_message == guild_data.monitoring_user:
-            confirmation_message = f"Monitoring is now {'enabled' if guild_data.monitoring_message else 'disabled'} for both users and messages in this guild."
-        elif not guild_data.monitoring_message and not guild_data.monitoring_user:
-            confirmation_message = "Monitoring is now disabled for both users and messages in this guild."
-
-        await ctx.send(confirmation_message)
+        await ctx.send(f"Message monitoring {'`enabled`' if guild_data.monitoring_message else '`disabled`'} and user monitoring {'`enabled`' if guild_data.monitoring_user else '`disabled`'} for this guild.")
 
     @monitor.group()
     async def group(self, ctx: commands.Context):
