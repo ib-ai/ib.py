@@ -60,6 +60,6 @@ class ListConverter(commands.Converter):
             return '*'
 
         try: 
-            return list(map(int, re.split(';|,|; |, ', argument)))
+            return list(map(int, re.split('\s*[,;\s]\s*', argument)))
         except ValueError:
             raise commands.BadArgument("The list provided is invalid.")
