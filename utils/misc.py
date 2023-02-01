@@ -7,3 +7,7 @@ def ordinal(n: int) -> str:
     if n%10 == 2: return f'{n}nd'
     if n%10 == 3: return f'{n}rd'
     return f'{n}th'
+
+
+def truncate(text: str, limit: int = 2000) -> str:
+    return text[:limit-3] + '...' if len(text) > limit else text

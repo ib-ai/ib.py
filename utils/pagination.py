@@ -5,6 +5,8 @@ import discord
 from discord import ui
 from discord.ext import commands
 
+from utils.misc import truncate
+
 
 
 NAME_SIZE_LIMIT = 256
@@ -66,8 +68,9 @@ def paginated_embed_menus(
             current = discord.Embed.from_dict(embed_dict)
             pages += 1
             items = 0
-        name = name[:NAME_SIZE_LIMIT-3] + '...' if len(name) >NAME_SIZE_LIMIT else name
-        value = value[:VALUE_SIZE_LIMIT-3] + '...' if len(value) > VALUE_SIZE_LIMIT else value
+
+        name = truncate(name, NAME_SIZE_LIMIT)
+        value = truncate(value, VALUE_SIZE_LIMIT)
         current.add_field(name=name, value=value, inline=inline_field)
         items += 1
     embeds.append(current)
