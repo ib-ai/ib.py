@@ -152,7 +152,7 @@ class Monitor(commands.Cog):
         await available_subcommands(ctx)
     
     @message.command(aliases=['add'], name='create')
-    async def message_create(self, ctx: commands.Context, pattern: RegexConverter):
+    async def message_create(self, ctx: commands.Context, *, pattern: RegexConverter):
         """
         Create a monitor for a message pattern.
         """
@@ -169,21 +169,21 @@ class Monitor(commands.Cog):
         await ctx.send(f"The pattern (`{pattern}`) has been successfully added to monitor.")
     
     @message.command(aliases=['remove'], name='delete')
-    async def message_delete(self, ctx: commands.Context, *, pattern: RegexConverter):
+    async def message_delete(self, ctx: commands.Context, pattern_id: int):
         """
         Delete a monitor for a message pattern.
         """
-        monitored_message = await StaffMonitorMessage.filter(message=pattern).get_or_none()
+        monitored_message = await StaffMonitorMessage.filter(monitor_message_id=pattern_id).get_or_none()
 
         if not monitored_message:
-            await ctx.send(f"The pattern (`{pattern}`) is not being monitored.")
+            await ctx.send(f"The pattern with ID `{pattern_id}` does not exist.")
             return
 
         await monitored_message.delete()
         get_all_monitor_messages.cache_clear()
 
-        logger.debug(f"Removed pattern {pattern} from monitor.")
-        await ctx.send(f"The pattern (`{pattern}`) has been successfully removed from monitor.")
+        logger.debug(f"Removed pattern {monitored_message.message} from monitor.")
+        await ctx.send(f"The pattern (`{monitored_message.message}`) has been successfully removed from monitor.")
 
     @message.command(name='toggle')
     async def message_toggle(self, ctx: commands.Context, pattern_id: int):
