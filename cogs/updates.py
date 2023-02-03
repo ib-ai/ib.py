@@ -38,20 +38,6 @@ class Updates(commands.Cog):
         """
         await available_subcommands(ctx)
     
-    @update.command()
-    @admin_command()
-    async def set(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
-        """
-        Set an updates channel.
-        """
-        values = dict(updates_id = channel.id if channel else None)
-        await GuildData.update_or_create(values, guild_id = ctx.guild.id)
-        get_guild_data.cache_clear()
-        if channel:
-            await ctx.send(f'Updates channel set to <#{channel.id}> for this guild.')
-        else:
-            await ctx.send(f'Updates channel removed for this guild.')
-    
     @update.command(aliases=['add'])
     async def create(self, ctx: commands.Context, update1: str, update2: Optional[str] = None, update3: Optional[str] = None):
         """

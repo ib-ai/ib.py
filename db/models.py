@@ -31,7 +31,6 @@ class GuildData(Model):
     moderator_id = fields.BigIntField(null=True)
     helper_id = fields.BigIntField(null=True)
     filtering = fields.BooleanField(default=False)
-    removal = fields.BooleanField(default=False)
     monitoring_user = fields.BooleanField(default=False)
     monitoring_message = fields.BooleanField(default=False)
     monitor_user_log_id = fields.BigIntField(null=True)

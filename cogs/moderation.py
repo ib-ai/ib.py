@@ -95,48 +95,6 @@ class Moderation(commands.Cog):
 
 
     @commands.hybrid_command()
-    async def logs(self, ctx: commands.Context):
-        """
-        Set a channel for log messages.
-        """ 
-        raise NotImplementedError('Command requires implementation and permission set-up.')
-    
-    @commands.hybrid_command()
-    async def moderators(self, ctx: commands.Context):
-        """
-        Set a role for moderators.
-        """ 
-        raise NotImplementedError('Command requires implementation and permission set-up.')
-
-    @commands.hybrid_group()
-    async def modlog(self, ctx: commands.Context):
-        """
-        Commands for setting channels to publish punishment updates to.
-        """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
-
-    @modlog.command()
-    async def server(self, ctx: commands.Context):
-        """
-        Set a channel for punishment updates to be sent to publicly.
-        """ 
-        raise NotImplementedError('Command requires implementation and permission set-up.')
-
-    @modlog.command()
-    async def staff(self, ctx: commands.Context):
-        """
-        Set a channel for punishment updates to be sent internally.
-        """ 
-        raise NotImplementedError('Command requires implementation and permission set-up.')
-    
-    @commands.hybrid_command()
-    async def muterole(self, ctx: commands.Context):
-        """
-        Set a role for mutes.
-        """ 
-        raise NotImplementedError('Command requires implementation and permission set-up.')
-    
-    @commands.hybrid_command()
     @describe(user='User to ban', reason='Reason for ban')
     async def blacklist(self, ctx: commands.Context, user: discord.User, *, reason: str):
         """

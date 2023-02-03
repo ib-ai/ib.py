@@ -64,44 +64,6 @@ class Monitor(commands.Cog):
         """
         await available_subcommands(ctx)
 
-    @monitor.group()
-    @admin_command()
-    async def channel(self, ctx: commands.Context):
-        """
-        Commands for setting up channels to log problematic messages to.
-        """
-        await available_subcommands(ctx)
-
-    @channel.command(name='user')
-    @admin_command()
-    async def channel_user(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
-        """
-        Set logger channel for monitored users.
-        """
-        values = dict(monitor_user_log_id = channel.id if channel else None)
-        await GuildData.update_or_create(values, guild_id=ctx.guild.id)
-        get_guild_data.cache_clear()
-
-        if channel:
-            await ctx.send(f'Log channel for monitored users set to <#{channel.id}> for this guild.')
-        else:
-            await ctx.send('Log channel for monitored users removed for this guild.')
-    
-    @channel.command(name='message')
-    @admin_command()
-    async def channel_message(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
-        """
-        Set logger channel for monitored message patterns.
-        """
-        values = dict(monitor_message_log_id = channel.id if channel else None)
-        await GuildData.update_or_create(values, guild_id=ctx.guild.id)
-        get_guild_data.cache_clear()
-
-        if channel:
-            await ctx.send(f'Log channel for monitored messages set to <#{channel.id}> for this guild.')
-        else:
-            await ctx.send('Log channel for monitored messages removed for this guild.')
-
     @monitor.command()
     async def cleanup(self, ctx: commands.Context):
         """
