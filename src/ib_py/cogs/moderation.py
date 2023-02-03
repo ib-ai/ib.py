@@ -2,9 +2,10 @@ from typing import Union
 
 import discord
 from discord.app_commands import describe
-from discord.ext import commands
 
-from ..utils.commands import available_subcommands
+from db.cached import get_guild_data
+
+from utils.commands import available_subcommands
 
 
 class Moderation(commands.Cog):
@@ -46,14 +47,53 @@ class Moderation(commands.Cog):
         """
         Log message edits.
         """
-        ...
+        utilities = f"[21 Jump Street]({after.jump_url})\n" \
+                  + f"User: {after.author.mention}"
+        embed_data = dict(
+            author = dict(
+                name = f'{after.author.name}#{after.author.discriminator} (ID: {after.author.id}) edited in #{after.channel.name}',
+            ),
+            color = discord.Colour.yellow().value,
+            fields = [
+                dict(name="From", value=before.content),
+                dict(name="To", value=after.content),
+                dict(name="Utilities", value=utilities)
+            ]
+        )
+        embed = discord.Embed.from_dict(embed_data)
+
+        guild_data = await get_guild_data(guild_id=after.guild.id)
+        if not guild_data:
+            return
+        
+        log_channel = self.bot.get_channel(guild_data.logs_id)
+        await log_channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message):
         """
         Log message deletes.
         """
-        ...
+        utilities = f"User: {message.author.mention}"
+        embed_data = dict(
+            author = dict(
+                name = f'{message.author.name}#{message.author.discriminator} (ID: {message.author.id}) edited in #{message.channel.name}',
+            ),
+            color = discord.Colour.red().value,
+            description = message.content,
+            fields = [
+                dict(name="Utilities", value=utilities)
+            ]
+        )
+        embed = discord.Embed.from_dict(embed_data)
+
+        guild_data = await get_guild_data(guild_id=message.guild.id)
+        if not guild_data:
+            return
+        
+        log_channel = self.bot.get_channel(guild_data.logs_id)
+        await log_channel.send(embed=embed)
+
 
     @commands.hybrid_command()
     async def logs(self, ctx: commands.Context):
