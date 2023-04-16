@@ -69,6 +69,7 @@ class IBpy(commands.Bot):
         logger.info(f"Described as \"{bot_description}\".")
 
         await self.get_cog('Reminder').schedule_existing_reminders()
+        await self.get_cog('Moderation').schedule_existing_punishment_expirations()
         logger.info(f'Existing reminders queued.')
     
     async def on_command_error(self, ctx: commands.Context, exception) -> None:

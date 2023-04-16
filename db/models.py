@@ -59,7 +59,7 @@ class GuildCassowaryRoles(Model):
     
     category_role_id = fields.BigIntField(pk=True)
     role_id = fields.BigIntField()
-    cassowary_id = fields.OneToOneField('models.GuildCassowary')
+    cassowary = fields.OneToOneField('models.GuildCassowary')
 
 class GuildVoteLadder(Model):
     class Meta():
@@ -84,7 +84,7 @@ class GuildVote(Model):
     negative = fields.IntField(default=0)
     expiry = fields.IntField(default=604800) # 1 week in seconds
     finished = fields.BooleanField(default=False)
-    vote_ladder_id = fields.OneToOneField('models.GuildVoteLadder')
+    vote_ladder = fields.OneToOneField('models.GuildVoteLadder')
 
 # Staff Tables
 
@@ -155,7 +155,7 @@ class StaffButtonRole(Model):
     emoji_id = fields.BigIntField()
     label = fields.CharField(max_length=256)
     role_ids = ArrayField()
-    reaction_id = fields.OneToOneField('models.StaffReaction')
+    reaction = fields.OneToOneField('models.StaffReaction')
 
 class StaffPunishment(Model):
     class Meta():
@@ -169,9 +169,10 @@ class StaffPunishment(Model):
     staff_id = fields.BigIntField()
     reason = fields.CharField(max_length=1024)
     redacted = fields.BooleanField(default=False)
-    message_id = fields.BigIntField()
-    message_staff_id = fields.BigIntField() 
+    message_id = fields.BigIntField(null=True)
+    message_staff_id = fields.BigIntField(null=True)
     expiry = fields.DatetimeField(null=True)
+    guild = fields.OneToOneField('models.GuildData')
 
 # Helper Tables
 
