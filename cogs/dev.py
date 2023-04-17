@@ -20,6 +20,7 @@ class Dev(commands.Cog):
         guild_data = await GuildData.get_or_none(guild_id=ctx.guild.id)
         if not guild_data:
             await ctx.send('No data set for this guild!')
+            return
         setcase = lambda x, c: f"set to ID of <{c}{x}>" if x else "not set"
         ablecase = lambda x: '`disabled`' if x else '`enabled`'
         message = f"""

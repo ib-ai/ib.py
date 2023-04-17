@@ -9,6 +9,7 @@ from db.cached import get_guild_data
 
 from utils.commands import available_subcommands
 from utils.checks import cogify, admin_command
+from utils import config
 
 import logging
 logger = logging.getLogger(__name__)
@@ -25,6 +26,17 @@ class SetGuildData(commands.Cog, name='Guild Settings'):
     cog_check = cogify(admin_command())
 
 
+    async def cog_load(self):
+        self.bot.command_prefix = self.get_prefix
+    
+    async def cog_unload(self):
+        self.bot.command_prefix = config.prefix
+
+    async def get_prefix(self, bot, message: discord.Message):
+        guild_data = await get_guild_data(message.guild.id)
+        return guild_data.prefix
+
+
     @staticmethod
     def guild_data_set_factory(datatype: str, dataname: str, *, desc: Optional[str] = None):
         style = mention_styles[datatype]
@@ -34,8 +46,12 @@ class SetGuildData(commands.Cog, name='Guild Settings'):
             {desc}
             """
             values = {dataname: thing.id if thing else None}
-            await GuildData.update_or_create(values, guild_id = ctx.guild.id)
+            guild_data, created = await GuildData.update_or_create(values, guild_id = ctx.guild.id)
+            if created:
+                guild_data.prefix = config.prefix
+                await guild_data.save()
             get_guild_data.cache_clear()
+
             if thing:
                 await ctx.send(f'`{dataname}` set to ID of <{style}{thing.id}> for this guild.')
             else:
@@ -75,6 +91,18 @@ class SetGuildData(commands.Cog, name='Guild Settings'):
     set.command(name='usermonitor')(guild_data_set_factory('TextChannel', 'monitor_message_log_id',
         desc='Set a user monitoring log channel.'
     ))
+
+    @set.command()
+    async def prefix(self, ctx, prefix):
+        """
+        Set a custom bot prefix for this guild.
+        """
+        prefix = prefix or config.prefix
+        values = {'prefix': prefix}
+        guild_data, created = await GuildData.update_or_create(values, guild_id = ctx.guild.id)
+        get_guild_data.cache_clear()
+
+        await ctx.send(f'`prefix` set to ID of `{prefix}` for this guild.')
 
 
     @staticmethod
