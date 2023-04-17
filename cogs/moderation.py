@@ -73,8 +73,9 @@ class Moderation(commands.Cog):
         self.active = {}
     
     async def handle_punishment_expiration(self, punishment: StaffPunishment):
-        punishment_type = punishment.punishment_type
         await long_sleep_until(punishment.expiry)
+
+        punishment_type = punishment.punishment_type
         if punishment_type == PunishmentType.BAN:
             guild = self.bot.get_guild(punishment.guild_id)
             user = await self.bot.fetch_user(punishment.user_id)
@@ -88,7 +89,28 @@ class Moderation(commands.Cog):
         return callback
 
     async def schedule_existing_punishment_expirations(self):
-        pass  # TODO: implement this
+        punishments = await StaffPunishment.filter(expiry__isnull=False, expiry__gte=timezone.now())
+        if not punishments:
+            logger.debug('No existing punishments with expirations in the future.')
+            return
+        
+        async with asyncio.TaskGroup() as tg:
+            for punishment in punishments:
+                if punishment.punishment_id in self.active:
+                    logger.debug('Punishment expiration already scheduled. (skipping)')
+                    continue
+
+                user = self.bot.get_user(punishment.user_id) or await self.bot.fetch_user(punishment.user_id)
+                if not user:
+                    logger.warning(f'User {punishment.user_id} not found. (skipping)')
+                    continue
+
+                task = asyncio.create_task(self.handle_punishment_expiration(punishment))
+                self.active[punishment.punishment_id] = task
+                task.add_done_callback(self.removal_callback(punishment.punishment_id))
+                logger.debug(f'Punishment expiration scheduled: id={punishment.punishment_id}')
+            logger.debug(f'Total punishment expirations scheduled: {len(self.active)}')
+
     
     async def publish_punishment_log(self, punishment_type: PunishmentType, entry: discord.AuditLogEntry):
         guild_data = await get_guild_data(guild_id=entry.guild.id)
@@ -252,7 +274,7 @@ class Moderation(commands.Cog):
                 PunishmentType.BAN,
                 PunishmentType.MUTE,
             ):
-            await ctx.send(f'Expiration is not supported for this punishment type: `{punishment.punishment_type}`.')
+            await ctx.send(f'Expiration is not supported for this punishment type: `{punishment.punishment_type.value}`.')
             return
 
         punishment.expiry = terminus

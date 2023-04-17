@@ -59,7 +59,7 @@ class GuildCassowaryRoles(Model):
     
     category_role_id = fields.BigIntField(pk=True)
     role_id = fields.BigIntField()
-    cassowary = fields.OneToOneField('models.GuildCassowary')
+    cassowary = fields.ForeignKeyField('models.GuildCassowary')
 
 class GuildVoteLadder(Model):
     class Meta():
@@ -84,7 +84,7 @@ class GuildVote(Model):
     negative = fields.IntField(default=0)
     expiry = fields.IntField(default=604800) # 1 week in seconds
     finished = fields.BooleanField(default=False)
-    vote_ladder = fields.OneToOneField('models.GuildVoteLadder')
+    vote_ladder = fields.ForeignKeyField('models.GuildVoteLadder')
 
 # Staff Tables
 
@@ -172,7 +172,7 @@ class StaffPunishment(Model):
     message_id = fields.BigIntField(null=True)
     message_staff_id = fields.BigIntField(null=True)
     expiry = fields.DatetimeField(null=True)
-    guild = fields.OneToOneField('models.GuildData')
+    guild = fields.ForeignKeyField('models.GuildData')
 
 # Helper Tables
 

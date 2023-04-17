@@ -49,6 +49,7 @@ class Reminder(commands.Cog):
         reminders = await MemberReminder.all()
         if not reminders:
             logger.debug('No existing reminders found.')
+            return
         
         # on bot start-up, add a bit of delay between scheduled reminders (to avoid rate-limiting)
         dormant = asyncio.create_task(
@@ -63,7 +64,7 @@ class Reminder(commands.Cog):
                 if reminder.reminder_id in self.active:
                     logger.debug('Reminder already active. (skipping)')
                     continue
-                user = self.bot.get_user(reminder.user_id)
+                user = self.bot.get_user(reminder.user_id) or await self.bot.fetch_user(reminder.user_id)
                 if not user:
                     logger.warning(f'User {reminder.user_id} not found. (skipping)')
                     continue
@@ -75,9 +76,8 @@ class Reminder(commands.Cog):
                     task = asyncio.create_task(self.handle_reminder(user, reminder))
                     self.active[reminder.reminder_id] = task
                     task.add_done_callback(self.removal_callback(reminder.reminder_id))
-                    logger.debug(f'Active timer running: {reminder.reminder_id}')
-
-                logger.debug(f'Active reminders: {len(self.active)}')
+                    logger.debug(f'Active timer running: id={reminder.reminder_id}')
+            logger.debug(f'Active reminders: {len(self.active)}')
 
     @commands.hybrid_group()
     async def reminder(self, ctx: commands.Context):
