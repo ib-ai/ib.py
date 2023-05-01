@@ -18,15 +18,6 @@ def Index(arg: str) -> int:
         raise commands.BadArgument('Index must be a positive integer.')
     return n
 
-def RegexConverter(arg: str) -> str:
-    """
-    Checks if provided regex pattern is valid.
-    """
-    try: re.compile(arg)
-    except re.error: 
-        raise commands.BadArgument("The regex pattern provided is invalid.")
-    return arg
-
 def DatetimeConverter(arg: str):
     """
     Convert string (timestamp or duration into the future) into a python datetime object.
@@ -50,6 +41,16 @@ def DatetimeConverter(arg: str):
         return now + delta
     except (ValueError, KeyError) as e:
         raise commands.BadArgument('Invalid duration format.')
+
+class RegexConverter(commands.Converter):
+    async def convert(self, ctx: commands.Context, arg: str) -> str:
+        """
+        Checks if provided regex pattern is valid.
+        """
+        try: re.compile(arg)
+        except re.error: 
+            raise commands.BadArgument("The regex pattern provided is invalid.")
+        return arg
 
 class ListConverter(commands.Converter):
     async def convert(self, ctx: commands.Context, argument: str) -> list[int] | str:
