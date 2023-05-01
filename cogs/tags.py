@@ -3,7 +3,7 @@ from typing import Optional
 import discord
 from discord.ext import commands
 from db.cached import get_all_tags
-from db.models import StaffTag
+from db.models import GuildReply, StaffTag
 
 from utils.commands import available_subcommands
 from utils.converters import RegexConverter
@@ -32,7 +32,11 @@ class Tags(commands.Cog):
         if message.author.bot:
             return
 
-        # TODO: Check if tags can be sent in channel with disableReply
+        # If bot replies are disabled for channel, return
+        disable_reply = message.channel.id in (await GuildReply.get_or_create(reply_id = message.guild.id))[0].channels
+
+        if disable_reply:
+            return
 
         tags = await get_all_tags()
 
@@ -133,6 +137,46 @@ class Tags(commands.Cog):
             f"Tag {trigger} is now {'disabled' if tag.disabled else 'enabled'}.")
         await ctx.send(f"Tag `{trigger}` is now {'disabled' if tag.disabled else 'enabled'}.")
 
+    @commands.hybrid_group()
+    async def reply(self, ctx: commands.Context):
+        """
+        Commands for handling channels where certain bot replies (e.g., tags) are disabled.
+        """
+        await available_subcommands(ctx)
+
+    @reply.command()
+    async def list(self, ctx: commands.Context):
+        """
+        List of disabled reply channels.
+        """
+        guild_reply = (await GuildReply.get_or_create(reply_id = ctx.guild.id))[0]
+        channels = [f"<#{channel_id}>" for channel_id in guild_reply.channels] if guild_reply.channels else ["`None`"]
+
+        await ctx.send(f"Replies for the following channels are disabled: {', '.join(channels)}")
+
+    @reply.command()
+    async def toggle(self, ctx: commands.Context, channel: discord.TextChannel):
+        """
+        Toggle if bot replies are disabled for specified channel.
+        """
+        guild_reply = (await GuildReply.get_or_create(reply_id = ctx.guild.id))[0]
+
+        if not guild_reply.channels:
+            guild_reply.channels = []
+
+        disabled = channel.id in guild_reply.channels
+
+        if disabled:
+            guild_reply.channels.remove(channel.id)
+        else:
+            guild_reply.channels.append(channel.id)
+
+        await guild_reply.save()
+
+        logger.debug(
+            f"Channel {channel.id} replies are now {'disabled' if not disabled else 'enabled'}.")
+        await ctx.send(f"Replies for <#{channel.id}> are now {'disabled' if not disabled else 'enabled'}.")
+    
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Tags(bot))

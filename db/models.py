@@ -87,6 +87,13 @@ class GuildVote(Model):
     finished = fields.BooleanField(default=False)
     vote_ladder_id = fields.OneToOneField('models.GuildVoteLadder')
 
+class GuildReply(Model):
+    class Meta():
+        table = "reply"
+
+    reply_id = fields.BigIntField(pk=True, unique=True)
+    channels = ArrayField(element_type="bigint", null = True)
+
 # Staff Tables
 
 class StaffTag(Model):
