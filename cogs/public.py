@@ -85,7 +85,7 @@ class Public(commands.Cog):
         embed.add_field(name="**Verification level**", value=f"{ctx.guild.verification_level}")
         embed.add_field(name="**Icon URL**", value=f"{ctx.guild.icon.url}")
         embed.set_thumbnail(url=ctx.guild.icon.url)
-        await ctx.reply(embed=embed)
+        await ctx.send(embed=embed)
     
     @commands.hybrid_command(aliases=['ui'])
     @describe(member='The user to display the information of.')
