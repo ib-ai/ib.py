@@ -78,12 +78,29 @@ class Public(commands.Cog):
         """
         Present server information.
         """
-        embed = discord.Embed(title=f"Server info for {ctx.guild.name}", color=discord.Color.green())
-        embed.add_field(name="**ID**", value=f"{ctx.guild.id}")
-        embed.add_field(name="**Creation date**", value=f"{ctx.guild.created_at.strftime('%c')}", inline=False)
-        embed.add_field(name="**Member count**", value=f"{ctx.guild.member_count}")
-        embed.add_field(name="**Verification level**", value=f"{ctx.guild.verification_level}")
-        embed.add_field(name="**Icon URL**", value=f"{ctx.guild.icon.url}")
+        embed = discord.Embed(title=f"{ctx.guild.name} ({ctx.guild.id})", color=discord.Color.green())
+        creation_date = ctx.guild.created_at
+        # unix timestamp
+        timestamp = int(creation_date.timestamp())
+        embed.add_field(name="**Creation Date**", value=f"<t:{timestamp}> (<t:{timestamp}:R>)", inline=False)
+        embed.add_field(name="**Member Count**", value=f"{ctx.guild.member_count}")
+        embed.add_field(name="**Verification Level**", value=f"{ctx.guild.verification_level}")
+        embed.add_field(name="**Owner**", value=f"{ctx.guild.owner}")
+
+        txt = len(ctx.guild.text_channels)
+        vc = len(ctx.guild.voice_channels)
+        ctg = len(ctx.guild.categories)
+        stg = len(ctx.guild.stage_channels)
+        frm = len(ctx.guild.forums)
+        total = txt + vc + ctg + stg + frm
+        embed.add_field(name="**Channels**", value=f"{txt} text, {vc} voice, {ctg} categories, {stg} stage, {frm} forum. {total} total", inline=False)
+
+        num_roles = len(ctx.guild.roles)
+        embed.add_field(name="**Roles**", value=f"{num_roles}", inline=False)
+
+        num_boosts = ctx.guild.premium_subscription_count
+        embed.add_field(name="**Boosts**", value=f"{num_boosts}", inline=False)
+        
         embed.set_thumbnail(url=ctx.guild.icon.url)
         await ctx.send(embed=embed)
     
