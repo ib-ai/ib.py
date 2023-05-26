@@ -78,7 +78,14 @@ class Public(commands.Cog):
         """
         Present server information.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        embed = discord.Embed(title=f"Server info for {ctx.guild.name}", color=discord.Color.green())
+        embed.add_field(name="**ID**", value=f"{ctx.guild.id}")
+        embed.add_field(name="**Creation date**", value=f"{ctx.guild.created_at.strftime('%c')}", inline=False)
+        embed.add_field(name="**Member count**", value=f"{ctx.guild.member_count}")
+        embed.add_field(name="**Verification level**", value=f"{ctx.guild.verification_level}")
+        embed.add_field(name="**Icon URL**", value=f"{ctx.guild.icon.url}")
+        embed.set_thumbnail(url=ctx.guild.icon.url)
+        await ctx.reply(embed=embed)
     
     @commands.hybrid_command(aliases=['ui'])
     @describe(member='The user to display the information of.')
