@@ -4,11 +4,6 @@ from datetime import datetime, timedelta
 
 from tortoise import timezone
 
-
-def format_timestamp(dt: datetime, fmt: str = 'f') -> str:
-    return f'<t:{int(dt.timestamp())}:{fmt}>'
-
-
 DEGENERACY_DELAY = timedelta(seconds=1)  # when datetime is in the past, a small amount of time is slept for regardless
 MAX_DELTA = timedelta(days=40)  # asyncio.sleep is faulty for longer periods of time
 async def long_sleep_until(terminus: datetime):
