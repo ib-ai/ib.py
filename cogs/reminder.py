@@ -103,7 +103,7 @@ class Reminder(commands.Cog):
         task = asyncio.create_task(self.handle_reminder(ctx.author, reminder))
         self.active[reminder.reminder_id] = task
         task.add_done_callback(self.removal_callback(reminder.reminder_id))
-        await ctx.send(f'Reminder set for {format_dt(terminus.timestamp())} ({format_dt(terminus.timestamp(), "R")}).')
+        await ctx.send(f'Reminder set for {format_dt(terminus)} ({format_dt(terminus, "R")}).')
 
     @reminder.command(aliases=['remove'])
     async def delete(self, ctx: commands.Context, id: int):
