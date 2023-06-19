@@ -6,8 +6,7 @@ from utils.config import subjects
 class Helper(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot        
-        self.pairs = subjects.split(';')
-        self.subjects = {int(pair.split(',')[0]):int(pair.split(',')[1]) for pair in self.pairs}
+        self.subjects = dict(map(int, pair.split(',')) for pair in subjects.split(';'))
         
         @bot.tree.context_menu(name="Toggle Pin")
         async def pin_message(interaction: discord.Interaction, message: discord.Message):
