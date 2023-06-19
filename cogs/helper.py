@@ -49,10 +49,12 @@ class Helper(commands.Cog):
         raise NotImplementedError('Command requires implementation and permission set-up.')
      
     @commands.hybrid_command()
-    async def pin(self, ctx: commands.Context, message: discord.Message):
+    async def pin(self, ctx: commands.Context, message: discord.Message = None):
         """
         Pin a message to a channel.
         """
+        if message is None:
+            return await ctx.send("Please provide a message to pin.")
         helper_role_id = self.subjects[ctx.channel.id]
         if not any(helper_role_id == role.id for role in ctx.author.roles):
             return await ctx.send('Only subject helpers can pin messages')
@@ -73,10 +75,12 @@ class Helper(commands.Cog):
              return await ctx.send('You have reached the maximum number of pins for this channel.')
             
     @commands.hybrid_command()
-    async def unpin(self, ctx: commands.Context, message: discord.Message):
+    async def unpin(self, ctx: commands.Context, message: discord.Message = None):
         """
         Unpin a message from a channel.
         """
+        if message is None:
+            return await ctx.send("Please provide a message to unpin.")
         helper_role_id = self.subjects[ctx.channel.id]
         if helper_role_id not in [role.id for role in ctx.author.roles]:
             return await ctx.send('Only subject helpers can unpin messages.')
@@ -92,9 +96,9 @@ class Helper(commands.Cog):
         except discord.Forbidden:
             return await ctx.send('The bot does not have the permission to unpin messages.')
         except discord.NotFound:
-             return await interaction.response.send_message('Invalid message ID provided.')
+             return await ctx.send('Invalid message ID provided.')
         except discord.HTTPException:
-             return await interaction.response.send_message('The message could not be unpinned.')
+             return await ctx.send('The message could not be unpinned.')
  
 async def setup(bot: commands.Bot):
     await bot.add_cog(Helper(bot))
