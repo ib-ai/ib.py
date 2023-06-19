@@ -68,7 +68,7 @@ class Helper(commands.Cog):
         except discord.Forbidden:
             return await ctx.send('The bot does not have the permission to unpin messages.')
         except discord.NotFound:
-             return await ctx.send('The message was not found.')
+             return await ctx.send('Invalid message ID provided.')
         except discord.HTTPException:
              return await ctx.send('You have reached the maximum number of pins for this channel.')
             
