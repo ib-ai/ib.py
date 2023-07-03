@@ -3,26 +3,21 @@ from async_lru import alru_cache
 from db.models import GuildData, StaffFilter, StaffMonitorMessage, StaffMonitorUser, StaffTag
 
 
-@alru_cache
-async def get_guild_data(guild_id: int) -> Optional[GuildData]:
-    return await GuildData.get_or_none(guild_id=guild_id)
+def model_cache_factory(Model):
+
+    @alru_cache
+    async def model_cache() -> list[Model]:
+        return await Model.all()
+
+    return model_cache
 
 
 @alru_cache
-async def get_all_monitor_users() -> list[StaffMonitorUser]:
-    return await StaffMonitorUser.all()
+async def get_guild_data(guild_id: int) -> GuildData:
+    return (await GuildData.get_or_create(guild_id=guild_id))[0]
 
 
-@alru_cache
-async def get_all_monitor_messages() -> list[StaffMonitorMessage]:
-    return await StaffMonitorMessage.all()
-
-
-@alru_cache
-async def get_all_filters() -> list[StaffFilter]:
-    return await StaffFilter.all()
-
-
-@alru_cache
-async def get_all_tags() -> list[StaffTag]:
-    return await StaffTag.all()
+get_all_monitor_users = model_cache_factory(StaffMonitorUser)
+get_all_monitor_messages = model_cache_factory(StaffMonitorMessage)
+get_all_filters = model_cache_factory(StaffFilter)
+get_all_tags = model_cache_factory(StaffTag)
