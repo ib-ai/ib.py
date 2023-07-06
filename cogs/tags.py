@@ -66,7 +66,7 @@ class Tags(commands.Cog):
                 trigger
         ) > NAME_SIZE_LIMIT - 13:  # 2 for backticks and 11 for [Disabled] with trailing whitespace
             await ctx.send(
-                f"The tag trigger is too long (should not exceed {NAME_SIZE_LIMIT - 11} characters)."
+                f"The tag trigger is too long (should not exceed {NAME_SIZE_LIMIT - 13} characters)."
             )
             return
 
