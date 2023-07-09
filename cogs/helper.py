@@ -1,29 +1,57 @@
 import discord
 from discord.ext import commands
-from utils.config import subjects 
+import toml
 
 
 class Helper(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot        
-        self.subjects = dict(map(int, pair.split(',')) for pair in subjects.split(';'))
+        self.subjects = toml.load('config.toml')['subjects']
+        self.helper_ids = self.subjects.keys()
+        self.subject_channels = [self.subjects[role] for role in self.helper_ids]
+        self.ctx_menu = discord.app_commands.ContextMenu(
+			name='Toggle Pin',
+			callback=self.toggle_pin,
+		)
+        self.bot.tree.add_command(self.ctx_menu)
         
-        @bot.tree.context_menu(name="Toggle Pin")
-        async def pin_message(interaction: discord.Interaction, message: discord.Message):
-            # checks if the person issuing the action is a helper
-            helper_role_id = self.subjects[interaction.channel.id]
-            if not any(helper_role_id == role.id for role in interaction.user.roles):
-                return await interaction.response.send_message('Only subject helpers can pin/unpin messages.', ephemeral=True)
-            # checks if the command is being issued in a subject channel
-            if interaction.channel.id not in self.subjects.keys():
-                return await interaction.response.send_message('You may only pin messages in subject channels.', ephemeral=True)
+    async def cog_unload(self) -> None:
+        self.bot.tree.remove_command(self.ctx_menu.name, type=self.ctx_menu.type)
+        
+    async def send_error(self, obj, message):
+        if isinstance(obj, commands.Context):
+            return await obj.send(message)
+        else:
+            return await obj.response.send_message(message, ephemeral=True)
+    
+    async def check_permissions(self, obj):
+        user = obj.author if isinstance(obj, commands.Context) else obj.user
+        channel = obj.channel.id
+        user_role_ids = [str(role.id) for role in user.roles]
+        if not any(role in self.helper_ids for role in user_role_ids):
+            message = 'Only subject helpers can pin messages.' 
+            await self.send_error(obj, message)
+            return False
+        if channel not in self.subject_channels:
+            message = 'You may only pin messages in subject channels.'
+            await self.send_error(obj, message)
+            return False
+        valid_channels = [self.subjects[role] for role in user_role_ids if role in self.helper_ids]
+        if channel not in valid_channels:
+            message = 'You may only pin messages in your respective subject channel.'
+            await self.send_error(obj, message)
+            return False
+        return True
+
+    async def toggle_pin(self, interaction: discord.Interaction, message: discord.Message):
+        if await self.check_permissions(interaction):
             try:
                 if message.pinned:
                     await message.unpin()
-                    return await interaction.response.send_message('The message was successfully unpinned')
+                    return await interaction.response.send_message('The message was successfully unpinned.')
                 else:
                     await message.pin()
-                    return await interaction.response.send_message('The message was successfully pinned')
+                    return await interaction.response.send_message('The message was successfully pinned.')
             except discord.Forbidden:
                 return await interaction.response.send_message('The bot does not have permission to pin/unpin messages.', ephemeral=True)
             except discord.NotFound:
@@ -32,8 +60,8 @@ class Helper(commands.Cog):
                 if not message.pinned:
                     return await interaction.response.send_message('You have reached the maximum number of pins for this channel.', ephemeral=True)
                 else:
-                    return await interaction.response.send_message('The message could not be unpinned', ephemeral=True)
-                
+                    return await interaction.response.send_message('The message could not be unpinned.', ephemeral=True)
+
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         """
@@ -52,52 +80,36 @@ class Helper(commands.Cog):
         """
         Pin a message to a channel.
         """
-        if message is None:
-            return await ctx.send("Please provide a message to pin.")
-        helper_role_id = self.subjects[ctx.channel.id]
-        if not any(helper_role_id == role.id for role in ctx.author.roles):
-            return await ctx.send('Only subject helpers can pin messages')
-        if ctx.channel.id not in self.subjects.keys():
-            return await ctx.send('You may only pin messages in subject channels.')
-        # checks if the message is already pinned
-        if message.pinned:
-            return await ctx.send('The message is already pinned.')
-        # pins the message
-        try:
-            await message.pin()
-            await ctx.send('The message was successfully pinned.')
-        except discord.Forbidden:
-            return await ctx.send('The bot does not have the permission to unpin messages.')
-        except discord.NotFound:
-             return await ctx.send('Invalid message ID provided.')
-        except discord.HTTPException:
-             return await ctx.send('You have reached the maximum number of pins for this channel.')
+        if await self.check_permissions(ctx):
+            if message.pinned:
+                return await ctx.send('The message is already pinned.')
+            try:
+                await message.pin()
+                return await ctx.send('The message was successfully pinned.')
+            except discord.Forbidden:
+                return await ctx.send('The bot does not have the permission to pin/unpin messages.')
+            except discord.NotFound:
+                return await ctx.send('Invalid message ID provided.')
+            except discord.HTTPException:
+                return await ctx.send('You have reached the maximum number of pins for this channel.')
             
     @commands.hybrid_command()
     async def unpin(self, ctx: commands.Context, message: discord.Message = None):
         """
         Unpin a message from a channel.
         """
-        if message is None:
-            return await ctx.send("Please provide a message to unpin.")
-        helper_role_id = self.subjects[ctx.channel.id]
-        if helper_role_id not in [role.id for role in ctx.author.roles]:
-            return await ctx.send('Only subject helpers can unpin messages.')
-        if ctx.channel.id not in self.subjects.keys():
-            return await ctx.send('You may only unpin messages in subject channels.')
-        # checks if the message is already unpinned
-        if not message.pinned:
-            return await ctx.send('The message is already unpinned.')
-        # unpins the message
-        try:
-            await message.unpin()
-            return await ctx.send('The message was successfully unpinned.')
-        except discord.Forbidden:
-            return await ctx.send('The bot does not have the permission to unpin messages.')
-        except discord.NotFound:
-             return await ctx.send('Invalid message ID provided.')
-        except discord.HTTPException:
-             return await ctx.send('The message could not be unpinned.')
+        if await self.check_permissions(ctx): 
+            if not message.pinned:
+                return await ctx.send('The message is already unpinned.')
+            try:
+                await message.unpin()
+                return await ctx.send('The message was successfully unpinned.')
+            except discord.Forbidden:
+                return await ctx.send('The bot does not have the permission to unpin messages.')
+            except discord.NotFound:
+                return await ctx.send('Invalid message ID provided.')
+            except discord.HTTPException:
+                return await ctx.send('The message could not be unpinned.')
  
 async def setup(bot: commands.Bot):
     await bot.add_cog(Helper(bot))

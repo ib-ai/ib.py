@@ -14,4 +14,3 @@ db_host        = os.getenv("DB_HOST")        if "DB_HOST"        in os.environ e
 db_user        = os.getenv("DB_USER")        if "DB_USER"        in os.environ else _config['db_user']
 db_name        = os.getenv("DB_NAME")        if "DB_NAME"        in os.environ else _config['db_name']
 db_password    = os.getenv("DB_PASSWORD")    if "DB_PASSWORD"    in os.environ else _config['db_password']
-subjects       = os.getenv("SUBJECTS")       if "SUBJECTS"       in os.environ else _config['subjects']
