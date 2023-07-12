@@ -57,14 +57,7 @@ class Public(commands.Cog):
         embed.set_author(name=f"{user.name}'s banner", icon_url=user.display_avatar.url)
         embed.set_image(url=user.banner.url)
         await ctx.send(embed=embed)
-    
-    @commands.hybrid_command()
-    async def opt(self, ctx: commands.Context):
-        """
-        Toggle user's access to a channel.
-        """ 
-        raise NotImplementedError('Command requires implementation and permission set-up.')
-    
+ 
     @commands.hybrid_command()
     async def ping(self, ctx: commands.Context):
         """
