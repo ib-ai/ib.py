@@ -60,12 +60,39 @@ class Roles(commands.Cog):
 
 
     @commands.hybrid_command()
-    async def giverole(self, ctx: commands.Context):
+    async def giverole(self, ctx: commands.Context, existing_role: discord.Role = None, new_role: discord.Role = None):
         """
         Assign a new role to all members with a specific role.
-        """ 
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        """
+        if existing_role is None or new_role is None:
+            return await ctx.send("Please provide both the existing and new role.")
+        role_members = [member for member in ctx.guild.members if existing_role in member.roles]
+        for member in role_members:
+            try:
+                await member.add_roles(new_role)
+            except discord.Forbidden:
+                return await ctx.send("I do not have permission to add roles to members.")
+            except discord.HTTPException:
+                await ctx.send(f"Could not add role to {member.name}")
+        await ctx.send("Successfully added roles.")
 
+    @commands.hybrid_command()
+    async def roleswap(self, ctx: commands.Context, existing_role: discord.Role = None, new_role: discord.Role = None):
+        """
+        Assigns a new role and takes old role from all members with a specific role.
+        """
+        if existing_role is None or new_role is None:
+            return await ctx.send("Please provide both the existing and new role.")
+        role_members = [member for member in ctx.guild.members if existing_role in member.roles]
+        for member in role_members:
+            try:
+                await member.remove_roles(existing_role)
+                await member.add_roles(new_role)
+            except discord.Forbidden:
+                return await ctx.send("I do not have permission to remove/add roles to members.")
+            except discord.HTTPException:
+                await ctx.send(f"Could not add/remove role for {member.name}")
+        await ctx.send("Successfully swapped roles.")
 
     @commands.hybrid_group()
     async def reaction(self, ctx: commands.Context):
