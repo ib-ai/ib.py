@@ -1,6 +1,10 @@
 import discord
 from discord.ext import commands
 from utils.checks import cogify, admin_command
+import logging
+
+logger = logging.getLogger('bot')
+logger.setLevel(logging.DEBUG) # TODO: change back to logging.info
 
 
 class Roles(commands.Cog):
@@ -14,8 +18,6 @@ class Roles(commands.Cog):
         """
         Assign a new role to all members with a specific role.
         """
-        if existing_role is None or new_role is None:
-            return await ctx.send("Please provide both the existing and new role.")
         role_members = [member for member in ctx.guild.members if existing_role in member.roles]
         for member in role_members:
             try:
@@ -23,8 +25,9 @@ class Roles(commands.Cog):
             except discord.Forbidden:
                 return await ctx.send("I do not have permission to add roles to members.")
             except discord.HTTPException:
-                await ctx.send(f"Could not add role to {member.name}")
-        await ctx.send("Successfully added roles.")
+                await ctx.send(f"Could not add role to {member.name}.")
+        await ctx.send(f"Successfully added roles to {len(role_members)} members.") 
+        logger.info(f'Given {new_role.name} role to {len(role_members)} members.')
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Roles(bot))
