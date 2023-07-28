@@ -24,7 +24,10 @@ class Roles(commands.Cog):
             try:
                 await member.add_roles(new_role)
             except discord.Forbidden:
-                logger.info(f'Could not add role to {member.name}')
+                logger.info(f'Could not add role to {member.name}.')
+                failure_count += 1
+            except discord.HTTPException:
+                logger.info(f'Could not add role to {member.name}.')
                 failure_count += 1
         await ctx.send(f"Successfully added roles to {len(role_members) - failure_count} members.") 
         logger.info(f'Given {new_role.name} role to {len(role_members)-failure_count} members.')
