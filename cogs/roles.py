@@ -24,13 +24,12 @@ class Roles(commands.Cog):
             try:
                 await member.add_roles(new_role)
             except discord.Forbidden:
-                logger.info(f'Could not add role to {member.name}.')
-                failure_count += 1
+                return await ctx.send('I do not have permission to add roles to members.')
             except discord.HTTPException:
                 logger.info(f'Could not add role to {member.name}.')
                 failure_count += 1
         await ctx.send(f"Successfully added roles to {len(role_members) - failure_count} members.") 
-        logger.info(f'Given {new_role.name} role to {len(role_members)-failure_count} members.')
+        logger.info(f'Given {new_role.name} role to {len(role_members) - failure_count} members.')
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Roles(bot))
