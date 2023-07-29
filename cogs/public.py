@@ -87,7 +87,7 @@ class Public(commands.Cog):
 
         num_boosts = ctx.guild.premium_subscription_count
         embed.add_field(name="**Boosts**", value=f"{num_boosts}")
-        embed.add_field(name="**Verification Level**", value=f"{ctx.guild.verification_level}")
+        embed.add_field(name="**Verification Level**", value=f"{str(ctx.guild.verification_level).capitalize()}")
         embed.add_field(name="**Owner**", value=f"{ctx.guild.owner.name}")
 
         txt = len(ctx.guild.text_channels)
