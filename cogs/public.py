@@ -71,8 +71,37 @@ class Public(commands.Cog):
         """
         Present server information.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
-    
+        embed = discord.Embed(title=f"{ctx.guild.name} ({ctx.guild.id})", color=discord.Color.green())
+        creation_date = ctx.guild.created_at
+        # unix timestamp
+        timestamp = discord.utils.format_dt(creation_date, style="F")
+        relative = discord.utils.format_dt(creation_date, style="R")
+        embed.add_field(name="**Creation Date**", value=f"{timestamp} ({relative})", inline=False)
+
+        num_boosts = ctx.guild.premium_subscription_count
+        embed.add_field(name="**Boosts**", value=f"{num_boosts}")
+        embed.add_field(name="**Verification Level**", value=f"{str(ctx.guild.verification_level).capitalize()}")
+        embed.add_field(name="**Owner**", value=f"{ctx.guild.owner.name}")
+
+        txt = len(ctx.guild.text_channels)
+        vc = len(ctx.guild.voice_channels)
+        ctg = len(ctx.guild.categories)
+        stg = len(ctx.guild.stage_channels)
+        frm = len(ctx.guild.forums)
+        total = txt + vc + ctg + stg + frm
+        embed.add_field(name="**Channels**", value=f"{txt} text, {vc} voice, {ctg} categories, {stg} stage, {frm} forum. {total} total.", inline=False)
+
+        guild = await self.bot.fetch_guild(ctx.guild.id, with_counts=True)
+        online = guild.approximate_presence_count
+        members = guild.approximate_member_count
+        embed.add_field(name="**Members**", value=f"{online} online, {members} total.")
+
+        num_roles = len(ctx.guild.roles)
+        embed.add_field(name="**Roles**", value=f"{num_roles}")
+
+        embed.set_thumbnail(url=ctx.guild.icon.url)
+        await ctx.send(embed=embed)
+        
     @commands.hybrid_command(aliases=['ui'])
     @describe(member='The user to display the information of.')
     async def userinfo(self, ctx: commands.Context, member: discord.Member = None):
