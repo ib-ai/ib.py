@@ -46,7 +46,7 @@ def paginated_embed_menus(
 
     if embed_dict:
         if 'title' in embed_dict and len(embed_dict['title']) > 256: raise ValueError('title cannot be over 256 characters')
-        if 'desription' in embed_dict and len(embed_dict['desription']) > 4096: raise ValueError('desription cannot be over 4096 characters')
+        if 'description' in embed_dict and len(embed_dict['description']) > 4096: raise ValueError('description cannot be over 4096 characters')
         if 'footer' in embed_dict: raise ValueError('embed_dict "footer" key must not be set.')
         if 'fields' in embed_dict: raise ValueError('embed_dict "fields" key must not be set.')
     else:
