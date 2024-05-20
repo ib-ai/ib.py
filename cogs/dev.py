@@ -7,6 +7,12 @@ import discord
 from discord.ext import commands
 
 
+def ext_converter(argument: str):
+    if not argument.startswith("cogs."):
+        argument = f"cogs.{argument}"
+    return argument
+
+
 class Dev(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
@@ -82,6 +88,36 @@ class Dev(commands.Cog):
                 ret += 1
 
         await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
+
+    @commands.group(aliases=['ext'])
+    async def extensions(self, ctx: commands.Context):
+        """Utilities for extensions"""
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help("ext")
+
+    @extensions.command(name="list")
+    async def ext_list(self, ctx):
+        """Lists currently loaded extensions"""
+        ext_list = "\n".join(f"- {ext}" for ext in self.bot.extensions)
+        await ctx.send(f"List of loaded extensions:\n{ext_list}")
+
+    @extensions.command(name="load")
+    async def ext_load(self, ctx, ext_name: ext_converter):
+        """Loads an extension"""
+        await self.bot.load_extension(ext_name)
+        ctx.send("Success!")
+
+    @extensions.command(name="unload")
+    async def ext_unload(self, ctx, ext_name: ext_converter):
+        """Unloads an extensions"""
+        await self.bot.unload_extension(ext_name)
+        await ctx.send("Success!")
+
+    @extensions.command(name="reload")
+    async def ext_reload(self, ctx, ext_name: ext_converter):
+        """Reloads an extension"""
+        await self.bot.reload_extension(ext_name)
+        await ctx.send("Success!")
 
 
 async def setup(bot: commands.Bot):
