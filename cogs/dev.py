@@ -16,14 +16,14 @@ def ext_converter(argument: str):
 class Dev(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-    
+
     @commands.command()
     async def guilddata(self, ctx: commands.Context):
         """
         Display all guild data.
         """
         raise NotImplementedError('Command requires implementation and permission set-up.')
-    
+
     @commands.command(name='eval')
     async def evaluate(self, ctx: commands.Context, *, code: str):
         """
@@ -52,14 +52,14 @@ class Dev(commands.Cog):
                 result = f"{stdout.getvalue()}\n-- {obj}\n"
         except Exception as e:
             raise RuntimeError(e)
-        
+
         await ctx.send(result[0:2000])
-    
+
     @commands.command()
     async def sync(self, ctx: commands.Context, guilds: commands.Greedy[discord.Object], spec: Optional[Literal["~", "*", "^"]] = None) -> None:
         """
         List your reminders.
-        """ 
+        """
         if not guilds:
             if spec == "~":
                 synced = await ctx.bot.tree.sync(guild=ctx.guild)
