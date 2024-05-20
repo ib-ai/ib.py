@@ -90,6 +90,7 @@ class Dev(commands.Cog):
         await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
     @commands.group(aliases=['ext'])
+    @commands.has_permissions(administrator=True)
     async def extensions(self, ctx: commands.Context):
         """Utilities for extensions"""
         if ctx.invoked_subcommand is None:
