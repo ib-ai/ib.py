@@ -17,6 +17,13 @@ class Dev(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
+    def cog_check(self, ctx: commands.Context) -> bool:
+        """
+        Only allow SysAdmins to run commands
+        """
+        required_perms = discord.Permissions(manage_guild=True)
+        return ctx.author.guild_permissions >= required_perms
+
     @commands.command()
     async def guilddata(self, ctx: commands.Context):
         """
@@ -90,7 +97,6 @@ class Dev(commands.Cog):
         await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
     @commands.group(aliases=['ext'])
-    @commands.has_permissions(administrator=True)
     async def extensions(self, ctx: commands.Context):
         """Utilities for extensions"""
         if ctx.invoked_subcommand is None:
