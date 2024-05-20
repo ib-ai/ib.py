@@ -112,19 +112,19 @@ class Dev(commands.Cog):
     async def ext_load(self, ctx, ext_name: ext_converter):
         """Loads an extension"""
         await self.bot.load_extension(ext_name)
-        ctx.send("Success!")
+        await ctx.send(f"Successfully loaded extension `{ext_name}`")
 
     @extensions.command(name="unload")
     async def ext_unload(self, ctx, ext_name: ext_converter):
         """Unloads an extensions"""
         await self.bot.unload_extension(ext_name)
-        await ctx.send("Success!")
+        await ctx.send(f"Successfully unloaded extension `{ext_name}`")
 
     @extensions.command(name="reload")
     async def ext_reload(self, ctx, ext_name: ext_converter):
         """Reloads an extension"""
         await self.bot.reload_extension(ext_name)
-        await ctx.send("Success!")
+        await ctx.send(f"Successfully reloaded extension `{ext_name}`")
 
 
 async def setup(bot: commands.Bot):
