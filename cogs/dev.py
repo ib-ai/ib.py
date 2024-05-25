@@ -6,6 +6,8 @@ from typing import Literal, Optional
 import discord
 from discord.ext import commands
 
+from utils.checks import cogify, admin_command
+
 
 def ext_converter(argument: str):
     if not argument.startswith("cogs."):
@@ -17,12 +19,7 @@ class Dev(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    def cog_check(self, ctx: commands.Context) -> bool:
-        """
-        Only allow SysAdmins to run commands
-        """
-        required_perms = discord.Permissions(manage_guild=True)
-        return ctx.author.guild_permissions >= required_perms
+    cog_check = cogify(admin_command())
 
     @commands.command()
     async def guilddata(self, ctx: commands.Context):
