@@ -1,4 +1,5 @@
 import io
+import logging
 import textwrap
 import contextlib
 from typing import Literal, Optional
@@ -7,9 +8,17 @@ import discord
 from discord.ext import commands
 
 from utils.checks import cogify, admin_command
+from utils.commands import available_subcommands
+
+
+logger = logging.getLogger(__name__)
 
 
 def ext_converter(argument: str):
+    """
+    A converter for an extension name.
+    """
+    argument = argument.strip()
     if not argument.startswith("cogs."):
         argument = f"cogs.{argument}"
     return argument
@@ -95,31 +104,44 @@ class Dev(commands.Cog):
 
     @commands.group(aliases=['ext'])
     async def extensions(self, ctx: commands.Context):
-        """Utilities for extensions"""
+        """
+        Utilities for managing loaded extensions.
+        """
         if ctx.invoked_subcommand is None:
-            await ctx.send_help("ext")
+            await available_subcommands(ctx)
 
     @extensions.command(name="list")
-    async def ext_list(self, ctx):
-        """Lists currently loaded extensions"""
+    async def ext_list(self, ctx: commands.Context):
+        """
+        Lists currently loaded extensions.
+        """
         ext_list = "\n".join(f"- {ext}" for ext in self.bot.extensions)
         await ctx.send(f"List of loaded extensions:\n{ext_list}")
 
     @extensions.command(name="load")
-    async def ext_load(self, ctx, ext_name: ext_converter):
-        """Loads an extension"""
+    async def ext_load(self, ctx: commands.Context, ext_name: ext_converter):
+        """
+        Loads an extension.
+        """
+        logger.info(f"Loading extension {ext_name}")
         await self.bot.load_extension(ext_name)
         await ctx.send(f"Successfully loaded extension `{ext_name}`")
 
     @extensions.command(name="unload")
-    async def ext_unload(self, ctx, ext_name: ext_converter):
-        """Unloads an extensions"""
+    async def ext_unload(self, ctx: commands.Context, ext_name: ext_converter):
+        """
+        Unloads an extension.
+        """
+        logger.info(f"Unloading extension {ext_name}")
         await self.bot.unload_extension(ext_name)
         await ctx.send(f"Successfully unloaded extension `{ext_name}`")
 
     @extensions.command(name="reload")
-    async def ext_reload(self, ctx, ext_name: ext_converter):
-        """Reloads an extension"""
+    async def ext_reload(self, ctx: commands.Context, ext_name: ext_converter):
+        """
+        Reloads an extension.
+        """
+        logger.info(f"Reloading extension {ext_name}")
         await self.bot.reload_extension(ext_name)
         await ctx.send(f"Successfully reloaded extension `{ext_name}`")
 
