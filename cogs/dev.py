@@ -10,15 +10,17 @@ from discord.ext import commands
 class Dev(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-    
+
     @commands.command()
     async def guilddata(self, ctx: commands.Context):
         """
         Display all guild data.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
-    
-    @commands.command(name='eval')
+        raise NotImplementedError(
+            "Command requires implementation and permission set-up."
+        )
+
+    @commands.command(name="eval")
     async def evaluate(self, ctx: commands.Context, *, code: str):
         """
         Run python code.
@@ -31,7 +33,7 @@ class Dev(commands.Cog):
             "channel": ctx.channel,
             "author": ctx.author,
             "guild": ctx.guild,
-            "message": ctx.message
+            "message": ctx.message,
         }
 
         stdout = io.StringIO()
@@ -39,21 +41,27 @@ class Dev(commands.Cog):
         try:
             with contextlib.redirect_stdout(stdout):
                 exec(
-                    f"async def func():\n{textwrap.indent(code, '    ')}", local_variables,
+                    f"async def func():\n{textwrap.indent(code, '    ')}",
+                    local_variables,
                 )
 
                 obj = await local_variables["func"]()
                 result = f"{stdout.getvalue()}\n-- {obj}\n"
         except Exception as e:
             raise RuntimeError(e)
-        
+
         await ctx.send(result[0:2000])
-    
+
     @commands.command()
-    async def sync(self, ctx: commands.Context, guilds: commands.Greedy[discord.Object], spec: Optional[Literal["~", "*", "^"]] = None) -> None:
+    async def sync(
+        self,
+        ctx: commands.Context,
+        guilds: commands.Greedy[discord.Object],
+        spec: Optional[Literal["~", "*", "^"]] = None,
+    ) -> None:
         """
         List your reminders.
-        """ 
+        """
         if not guilds:
             if spec == "~":
                 synced = await ctx.bot.tree.sync(guild=ctx.guild)

@@ -1,10 +1,14 @@
-from typing import Optional
 from async_lru import alru_cache
-from db.models import GuildData, StaffFilter, StaffMonitorMessage, StaffMonitorUser, StaffTag
+from db.models import (
+    GuildData,
+    StaffFilter,
+    StaffMonitorMessage,
+    StaffMonitorUser,
+    StaffTag,
+)
 
 
 def model_cache_factory(Model):
-
     @alru_cache
     async def model_cache() -> list[Model]:
         return await Model.all()

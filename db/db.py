@@ -6,7 +6,7 @@ logger = logging.getLogger()
 
 TORTOISE_ORM = {
     "connections": {
-        "default": f'postgres://{config.db_user}:{config.db_password}@{config.db_host}:5432/{config.db_name}'
+        "default": f"postgres://{config.db_user}:{config.db_password}@{config.db_host}:5432/{config.db_name}"
     },
     "apps": {
         "models": {
