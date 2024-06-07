@@ -63,9 +63,7 @@ class Monitor(commands.Cog):
             ]
             for pattern in monitor_messages:
                 if re.search(pattern, message.content, re.IGNORECASE):
-                    await log_suspicious_message(
-                        guild_data.monitor_message_log_id, message
-                    )
+                    await log_suspicious_message(guild_data.monitor_message_log_id, message)
                     return
 
     cog_check = cogify(staff_command())
@@ -196,9 +194,7 @@ class Monitor(commands.Cog):
         get_all_monitor_messages.cache_clear()
 
         logger.debug(f"Added pattern {pattern} to monitor.")
-        await ctx.send(
-            f"The pattern (`{pattern}`) has been successfully added to monitor."
-        )
+        await ctx.send(f"The pattern (`{pattern}`) has been successfully added to monitor.")
 
     @message.command(aliases=["remove"], name="delete")
     async def message_delete(self, ctx: commands.Context, pattern_id: int):
@@ -343,9 +339,7 @@ class Monitor(commands.Cog):
             ).get_or_none()
 
             if not db_monitor_message:
-                await ctx.send(
-                    f"The pattern with ID `{pattern_id}` could not be found."
-                )
+                await ctx.send(f"The pattern with ID `{pattern_id}` could not be found.")
                 return
 
             db_monitor_messages.append(db_monitor_message)
@@ -356,9 +350,7 @@ class Monitor(commands.Cog):
 
         sorted_group_messages = [
             message.monitor_message_id
-            async for message in monitor_group.monitor_messages.order_by(
-                "monitor_message_id"
-            )
+            async for message in monitor_group.monitor_messages.order_by("monitor_message_id")
         ]
 
         logger.debug(
@@ -391,9 +383,7 @@ class Monitor(commands.Cog):
             logger.debug(f"Removed monitor group {name}.")
             return
 
-        monitor_group_patterns = [
-            pattern async for pattern in monitor_group.monitor_messages
-        ]
+        monitor_group_patterns = [pattern async for pattern in monitor_group.monitor_messages]
 
         # Delete specific entries from group
         if monitor_messages and monitor_messages != "*":
@@ -405,9 +395,7 @@ class Monitor(commands.Cog):
                 ).get_or_none()
 
                 if not db_monitor_message:
-                    await ctx.send(
-                        f"The pattern with ID `{pattern_id}` could not be found."
-                    )
+                    await ctx.send(f"The pattern with ID `{pattern_id}` could not be found.")
                     return
 
                 if db_monitor_message not in monitor_group_patterns:
@@ -509,9 +497,7 @@ async def create_formatted_group_message(
     formatted_messages = []
 
     for group in monitor_groups:
-        sorted_messages = await group.monitor_messages.all().order_by(
-            "monitor_message_id"
-        )
+        sorted_messages = await group.monitor_messages.all().order_by("monitor_message_id")
         message_lines = [
             f"[ID: {pattern.monitor_message_id}] {pattern.message}"
             for pattern in sorted_messages

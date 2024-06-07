@@ -42,9 +42,7 @@ class Updates(commands.Cog):
 
     @update.command()
     @admin_command()
-    async def set(
-        self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None
-    ):
+    async def set(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
         """
         Set an updates channel.
         """
@@ -80,9 +78,7 @@ class Updates(commands.Cog):
         updates_channel = self.bot.get_channel(guild_data.updates_id)
 
         # updates operates by UTC dates
-        last_midnight = datetime.now(tz=UTC).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
+        last_midnight = datetime.now(tz=UTC).replace(hour=0, minute=0, second=0, microsecond=0)
         async for message in updates_channel.history(limit=5, after=last_midnight):
             if message.author == self.bot.user:
                 update_content = "\n- ".join([message.content, *updates])

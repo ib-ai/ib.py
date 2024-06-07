@@ -41,9 +41,7 @@ class Public(commands.Cog):
         member = member or ctx.author
         embed = discord.Embed(color=discord.Color.blurple())
         embed.set_author(name=f"{member.name}'s avatar")
-        embed.set_image(
-            url=member.avatar.url if member.avatar else member.default_avatar.url
-        )
+        embed.set_image(url=member.avatar.url if member.avatar else member.default_avatar.url)
         await ctx.send(embed=embed)
 
     @commands.hybrid_command()
@@ -130,9 +128,7 @@ class Public(commands.Cog):
         embed.set_author(
             name=f"{member.name}'s information", icon_url=member.display_avatar.url
         )
-        embed.add_field(
-            name="**Nickname**", value=f"{member.display_name}", inline=False
-        )
+        embed.add_field(name="**Nickname**", value=f"{member.display_name}", inline=False)
         embed.add_field(
             name="**Server join date**", value=f'{member.joined_at.strftime("%c")}'
         )

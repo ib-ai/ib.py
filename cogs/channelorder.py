@@ -10,27 +10,21 @@ class ChannelOrder(commands.Cog):
         """
         Commands for discord channel arrangement within categories.
         """
-        raise NotImplementedError(
-            "Command requires implementation and permission set-up."
-        )
+        raise NotImplementedError("Command requires implementation and permission set-up.")
 
     @channelorder.command()
     async def snapshot(self, ctx: commands.Context):
         """
         Save the arrangement of channels in a category.
         """
-        raise NotImplementedError(
-            "Command requires implementation and permission set-up."
-        )
+        raise NotImplementedError("Command requires implementation and permission set-up.")
 
     @channelorder.command(aliases=["r"])
     async def rollback(self, ctx: commands.Context):
         """
         Revert the arrangement of channels in a category.
         """
-        raise NotImplementedError(
-            "Command requires implementation and permission set-up."
-        )
+        raise NotImplementedError("Command requires implementation and permission set-up.")
 
 
 async def setup(bot: commands.Bot):

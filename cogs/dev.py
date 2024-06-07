@@ -16,9 +16,7 @@ class Dev(commands.Cog):
         """
         Display all guild data.
         """
-        raise NotImplementedError(
-            "Command requires implementation and permission set-up."
-        )
+        raise NotImplementedError("Command requires implementation and permission set-up.")
 
     @commands.command(name="eval")
     async def evaluate(self, ctx: commands.Context, *, code: str):

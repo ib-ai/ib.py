@@ -192,7 +192,9 @@ async def log_filtered_message(
 
     author = f"{message.author.name}#{message.author.discriminator} (ID: {message.author.id})"
 
-    description = f'"{formatted_message}", sent in **<#{message.channel.id}>** by <@{message.author.id}>'
+    description = (
+        f'"{formatted_message}", sent in **<#{message.channel.id}>** by <@{message.author.id}>'
+    )
     description = truncate(
         description, 950
     )  # Accounts for above characters and a lenient snowflake value
@@ -201,9 +203,7 @@ async def log_filtered_message(
         title=author, description=description, color=discord.Colour.magenta()
     )
 
-    embed.set_author(
-        name="Filter was triggered!", icon_url=message.author.display_avatar.url
-    )
+    embed.set_author(name="Filter was triggered!", icon_url=message.author.display_avatar.url)
 
     await filter_channel.send(embed=embed)
 

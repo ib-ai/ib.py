@@ -28,9 +28,7 @@ class Roles(commands.Cog):
             try:
                 await member.add_roles(new_role)
             except discord.Forbidden:
-                return await ctx.send(
-                    "I do not have permission to add roles to members."
-                )
+                return await ctx.send("I do not have permission to add roles to members.")
             except discord.HTTPException:
                 logger.info(f"Could not add role to {member.name}.")
                 failure_count += 1

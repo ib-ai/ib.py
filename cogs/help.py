@@ -13,33 +13,25 @@ class IBpyHelp(commands.HelpCommand):
         """
         Send help menu for the bot.
         """
-        raise NotImplementedError(
-            "Command requires implementation and permission set-up."
-        )
+        raise NotImplementedError("Command requires implementation and permission set-up.")
 
     async def send_cog_help(self, cog: commands.Cog):
         """
         Send help menu for a cog.
         """
-        raise NotImplementedError(
-            "Command requires implementation and permission set-up."
-        )
+        raise NotImplementedError("Command requires implementation and permission set-up.")
 
     async def send_group_help(self, group: commands.Group):
         """
         Send help menu for a command group.
         """
-        raise NotImplementedError(
-            "Command requires implementation and permission set-up."
-        )
+        raise NotImplementedError("Command requires implementation and permission set-up.")
 
     async def send_command_help(self, command: commands.Command):
         """
         Send help menu for a command.
         """
-        raise NotImplementedError(
-            "Command requires implementation and permission set-up."
-        )
+        raise NotImplementedError("Command requires implementation and permission set-up.")
 
     async def send_error_message(self, error: str):
         """

@@ -45,9 +45,7 @@ class Helper(commands.Cog):
             return False
         return True
 
-    async def toggle_pin(
-        self, interaction: discord.Interaction, message: discord.Message
-    ):
+    async def toggle_pin(self, interaction: discord.Interaction, message: discord.Message):
         if await self.check_permissions(interaction):
             try:
                 if message.pinned:
@@ -92,9 +90,7 @@ class Helper(commands.Cog):
         """
         Send an updating list of helpers for a subject.
         """
-        raise NotImplementedError(
-            "Command requires implementation and permission set-up."
-        )
+        raise NotImplementedError("Command requires implementation and permission set-up.")
 
     @commands.hybrid_command()
     async def pin(self, ctx: commands.Context, message: discord.Message = None):

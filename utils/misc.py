@@ -1,8 +1,6 @@
 def ordinal(n: int) -> str:
     if n < 0:
-        raise ValueError(
-            "Negative ordinal - ordinal must be passed a non-negative integer."
-        )
+        raise ValueError("Negative ordinal - ordinal must be passed a non-negative integer.")
 
     if n % 100 in (11, 12, 13):
         return f"{n}th"

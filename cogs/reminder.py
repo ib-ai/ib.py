@@ -74,9 +74,7 @@ class Reminder(commands.Cog):
                     continue
 
                 if reminder.timestamp <= timezone.now():
-                    dormant = tg.create_task(
-                        schedule_once_completed(dormant, user, reminder)
-                    )
+                    dormant = tg.create_task(schedule_once_completed(dormant, user, reminder))
                     logger.debug(f"Dormant timer running: {reminder.reminder_id}")
                 else:
                     task = asyncio.create_task(self.handle_reminder(user, reminder))
@@ -95,9 +93,7 @@ class Reminder(commands.Cog):
 
     @reminder.command(aliases=["add"])
     @app_commands.rename(terminus="duration")
-    async def create(
-        self, ctx: commands.Context, terminus: DatetimeConverter, *, message
-    ):
+    async def create(self, ctx: commands.Context, terminus: DatetimeConverter, *, message):
         """
         Create a reminder.
         """
@@ -107,9 +103,7 @@ class Reminder(commands.Cog):
         task = asyncio.create_task(self.handle_reminder(ctx.author, reminder))
         self.active[reminder.reminder_id] = task
         task.add_done_callback(self.removal_callback(reminder.reminder_id))
-        await ctx.send(
-            f'Reminder set for {format_dt(terminus)} ({format_dt(terminus, "R")}).'
-        )
+        await ctx.send(f'Reminder set for {format_dt(terminus)} ({format_dt(terminus, "R")}).')
 
     @reminder.command(aliases=["remove"])
     async def delete(self, ctx: commands.Context, id: int):

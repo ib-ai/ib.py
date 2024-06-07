@@ -41,9 +41,7 @@ def paginated_embed_menus(
     """
     N = len(names)
     if N != len(values):
-        raise ValueError(
-            "names and values for paginated embed menus must be of equal length."
-        )
+        raise ValueError("names and values for paginated embed menus must be of equal length.")
     if isinstance(inline, bool):
         inline = [inline] * N
     elif N != len(inline):

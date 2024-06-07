@@ -10,18 +10,14 @@ class Embeds(commands.Cog):
         """
         Interactively construct a Discord embed.
         """
-        raise NotImplementedError(
-            "Command requires implementation and permission set-up."
-        )
+        raise NotImplementedError("Command requires implementation and permission set-up.")
 
     @commands.command()
     async def embedraw(self, ctx: commands.Context):
         """
         Create a Discord embed via raw JSON input.
         """
-        raise NotImplementedError(
-            "Command requires implementation and permission set-up."
-        )
+        raise NotImplementedError("Command requires implementation and permission set-up.")
 
 
 async def setup(bot: commands.Bot):

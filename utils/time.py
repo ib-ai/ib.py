@@ -62,9 +62,7 @@ def parse_time(s: str) -> timedelta:
             # python timedelta objects don't work with months
             # implemented this way to preserve the day of month
             now = timezone.now() + total_delta
-            if (
-                now.day >= 28
-            ):  # for when you add 1 month to the 31st of January, and similar
+            if now.day >= 28:  # for when you add 1 month to the 31st of January, and similar
                 now -= ENDMONTH_BUFFER  # subtract a few days so datetime initialization doesn't throw errors
             for i in range(value):
                 year = now.year
