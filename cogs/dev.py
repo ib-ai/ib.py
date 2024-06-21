@@ -71,7 +71,7 @@ class Dev(commands.Cog):
     @commands.command()
     async def sync(self, ctx: commands.Context, guilds: commands.Greedy[discord.Object], spec: Optional[Literal["~", "*", "^"]] = None) -> None:
         """
-        List your reminders.
+        Syncs app commands to Discord.
         """
         if not guilds:
             if spec == "~":
