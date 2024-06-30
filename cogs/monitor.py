@@ -234,11 +234,14 @@ class Monitor(commands.Cog):
         await monitored_message.save()
         get_all_monitor_messages.cache_clear()
 
+        status = "Disabled" if monitored_message.disabled else "Enabled"
         logger.debug(
-            f"{'Disabled' if monitored_message.disabled else 'Enabled'} pattern with ID {monitored_message.monitor_message_id} in monitor."
+            f"{status} pattern with ID {monitored_message.monitor_message_id} in monitor."
         )
         await ctx.send(
-            f"The pattern (`{monitored_message.message}`) [ID: {monitored_message.monitor_message_id}] has been successfully {'disabled' if monitored_message.disabled else 'enabled'}."
+            f"The pattern (`{monitored_message.message}`) "
+            f"[ID: {monitored_message.monitor_message_id}] "
+            f"has been successfully {status.lower()}."
         )
 
     @monitor.group()

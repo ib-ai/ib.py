@@ -24,7 +24,7 @@ INITIAL_COGS = (
     "dev",
     "embeds",
     "filter",
-    # 'help',
+    # "help",
     "helper",
     "moderation",
     "monitor",
