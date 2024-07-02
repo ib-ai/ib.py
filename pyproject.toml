@@ -2,3 +2,31 @@
 tortoise_orm = "db.db.TORTOISE_ORM"
 location = "db/migrations"
 src_folder = "./."
+
+[tool.pdm]
+distribution = false
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "ruff>=0.4.4",
+]
+[project]
+name = "ib.py"
+version = "0.1.0"
+description = "Discord bot for International Baccalaureate Discord server."
+authors = [
+    {name = "ib-ai", email = ""},
+]
+dependencies = [
+    "discord-py>=2.3.2",
+    "async-lru>=2.0.4",
+    "toml>=0.10.2",
+    "aerich>=0.7.2",
+    "tortoise-orm[asyncpg]>=0.20.1",
+]
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "GPL-3.0-only"}
+
+[tool.ruff]
+line-length = 95

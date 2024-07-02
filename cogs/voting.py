@@ -20,76 +20,75 @@ class Voting(commands.Cog):
         """
         ...
 
-    
     @commands.hybrid_group()
     async def voteladder(self, ctx: commands.Context):
         """
         Commands for handling voteladders.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
-    
+        raise NotImplementedError("Command requires implementation and permission set-up.")
+
     @voteladder.command()
     async def channel(self, ctx: commands.Context):
         """
         Assign a channel to a voteladder.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
-    
-    @voteladder.command(aliases=['add'])
+        raise NotImplementedError("Command requires implementation and permission set-up.")
+
+    @voteladder.command(aliases=["add"])
     async def create(self, ctx: commands.Context):
         """
         Create a voteladder.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
-    
-    @voteladder.command(aliases=['remove'])
+        raise NotImplementedError("Command requires implementation and permission set-up.")
+
+    @voteladder.command(aliases=["remove"])
     async def delete(self, ctx: commands.Context):
         """
         Delete a voteladder.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
-    
+        raise NotImplementedError("Command requires implementation and permission set-up.")
+
     @voteladder.command()
     async def duration(self, ctx: commands.Context):
         """
         Assign a vote duration to a voteladder.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
-    
+        raise NotImplementedError("Command requires implementation and permission set-up.")
+
     @voteladder.command()
     async def minimum(self, ctx: commands.Context):
         """
         Assign a minimum upvote count for passing to a voteladder.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
-    
+        raise NotImplementedError("Command requires implementation and permission set-up.")
+
     @voteladder.command()
     async def role(self, ctx: commands.Context):
         """
         Assign a role to the voteladder.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
-    
+        raise NotImplementedError("Command requires implementation and permission set-up.")
+
     @voteladder.command()
     async def threshold(self, ctx: commands.Context):
         """
         Assign a vote passing theshold to a voteladder.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
-    
+        raise NotImplementedError("Command requires implementation and permission set-up.")
+
     @voteladder.command()
     async def list(self, ctx: commands.Context):
         """
         List available voteladders.
-        """ 
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        """
+        raise NotImplementedError("Command requires implementation and permission set-up.")
 
     @commands.command()
     async def vote(self, ctx: commands.Context):
         """
         Hold a vote within a particular voteladder.
-        """ 
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        """
+        raise NotImplementedError("Command requires implementation and permission set-up.")
 
 
 async def setup(bot: commands.Bot):

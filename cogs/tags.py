@@ -10,13 +10,17 @@ from utils.converters import RegexConverter
 
 import logging
 
-from utils.pagination import NAME_SIZE_LIMIT, VALUE_SIZE_LIMIT, PaginationView, paginated_embed_menus
+from utils.pagination import (
+    NAME_SIZE_LIMIT,
+    VALUE_SIZE_LIMIT,
+    PaginationView,
+    paginated_embed_menus,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class Tags(commands.Cog):
-
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
@@ -56,15 +60,14 @@ class Tags(commands.Cog):
         """
         await available_subcommands(ctx)
 
-    @tag.command(name="create", aliases=['add'])
-    async def tag_create(self, ctx: commands.Context, trigger: RegexConverter,
-                         output: str):
+    @tag.command(name="create", aliases=["add"])
+    async def tag_create(self, ctx: commands.Context, trigger: RegexConverter, output: str):
         """
         Create a tag.
         """
-        if len(
-                trigger
-        ) > NAME_SIZE_LIMIT - 13:  # 2 for backticks and 11 for [Disabled] with trailing whitespace
+        if (
+            len(trigger) > NAME_SIZE_LIMIT - 13
+        ):  # 2 for backticks and 11 for [Disabled] with trailing whitespace
             await ctx.send(
                 f"The tag trigger is too long (should not exceed {NAME_SIZE_LIMIT - 13} characters)."
             )
@@ -84,7 +87,7 @@ class Tags(commands.Cog):
         logger.debug(f"Created tag {trigger} with output {output}.")
         await ctx.send(f"Created tag `{trigger}` with output `{output}`.")
 
-    @tag.command(name="delete", aliases=['remove'])
+    @tag.command(name="delete", aliases=["remove"])
     async def tag_delete(self, ctx: commands.Context, trigger: RegexConverter):
         """
         Delete a tag.
@@ -102,28 +105,20 @@ class Tags(commands.Cog):
         await ctx.send(f"Deleted tag `{trigger}` with output `{tag.output}`.")
 
     @tag.command(name="list")
-    async def tag_list(self,
-                       ctx: commands.Context,
-                       trigger: Optional[RegexConverter] = None):
+    async def tag_list(self, ctx: commands.Context, trigger: Optional[RegexConverter] = None):
         """
         List of tags with specified filter, or all tags if none specified.
         """
         tags = await get_all_tags()
 
         if trigger:
-            tags = [
-                tag for tag in tags if trigger.lower() in tag.trigger.lower()
-            ]
+            tags = [tag for tag in tags if trigger.lower() in tag.trigger.lower()]
 
-        names = [
-            f"{'[Disabled] ' if tag.disabled else ''}`{tag.trigger}`"
-            for tag in tags
-        ]
+        names = [f"{'[Disabled] ' if tag.disabled else ''}`{tag.trigger}`" for tag in tags]
         values = [tag.output for tag in tags]
 
         embeds = paginated_embed_menus(names, values)
-        tag_embed, tag_view = await PaginationView(
-            ctx, embeds).return_paginated_embed_view()
+        tag_embed, tag_view = await PaginationView(ctx, embeds).return_paginated_embed_view()
 
         await ctx.send(embed=tag_embed, view=tag_view)
 
@@ -142,12 +137,8 @@ class Tags(commands.Cog):
         await tag.save()
         get_all_tags.cache_clear()
 
-        logger.debug(
-            f"Tag {trigger} is now {'disabled' if tag.disabled else 'enabled'}."
-        )
-        await ctx.send(
-            f"Tag `{trigger}` is now {'disabled' if tag.disabled else 'enabled'}."
-        )
+        logger.debug(f"Tag {trigger} is now {'disabled' if tag.disabled else 'enabled'}.")
+        await ctx.send(f"Tag `{trigger}` is now {'disabled' if tag.disabled else 'enabled'}.")
 
     @commands.hybrid_group()
     async def reply(self, ctx: commands.Context):
@@ -161,18 +152,19 @@ class Tags(commands.Cog):
         """
         List of disabled reply channels.
         """
-        suppressed_channels = (await get_guild_data(guild_id=ctx.guild.id
-                                                    )).suppressed_channels
-        channels = [f"<#{channel_id}>" for channel_id in suppressed_channels
-                    ] if suppressed_channels else ["`None`"]
+        suppressed_channels = (await get_guild_data(guild_id=ctx.guild.id)).suppressed_channels
+        channels = (
+            [f"<#{channel_id}>" for channel_id in suppressed_channels]
+            if suppressed_channels
+            else ["`None`"]
+        )
 
         await ctx.send(
             f"Replies for the following channels are disabled: {', '.join(channels)}"
         )
 
     @reply.command(name="toggle")
-    async def reply_toggle(self, ctx: commands.Context,
-                           channel: discord.TextChannel):
+    async def reply_toggle(self, ctx: commands.Context, channel: discord.TextChannel):
         """
         Toggle if bot replies are disabled for specified channel.
         """

@@ -14,14 +14,15 @@ from discord.utils import format_dt
 from utils.pagination import paginated_embed_menus, PaginationView
 
 import logging
+
 logger = logging.getLogger(__name__)
 
-class Reminder(commands.Cog):
 
+class Reminder(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.active: Mapping[int, asyncio.Task] = {}
-    
+
     async def handle_reminder(self, user: discord.User, reminder: MemberReminder):
         """
         Sleep until reminder's timestamp, then send the message to the user and delete the timer.
@@ -30,18 +31,20 @@ class Reminder(commands.Cog):
         message = reminder.message
         terminus = reminder.timestamp
         await long_sleep_until(terminus)
-        await user.send(f'You asked me to remind you: {message}')
+        await user.send(f"You asked me to remind you: {message}")
         await reminder.delete()
-    
+
     def removal_callback(self, id: int):
         """
         Create callback for removing reminder's task from the internal mapping of active tasks.
         To be used in asyncio.Task.add_done_callback when scheduling a timer.
         """
+
         def callback(task: asyncio.Task):
             del self.active[id]
+
         return callback
-    
+
     async def schedule_existing_reminders(self):
         """
         Schedule all timers existing in the database. To be used on bot start-up.
@@ -49,36 +52,37 @@ class Reminder(commands.Cog):
         """
         reminders = await MemberReminder.all()
         if not reminders:
-            logger.debug('No existing reminders found.')
-        
+            logger.debug("No existing reminders found.")
+
         # on bot start-up, add a bit of delay between scheduled reminders (to avoid rate-limiting)
-        dormant = asyncio.create_task(
-            asyncio.sleep(DEGENERACY_DELAY.total_seconds())
-        )
-        async def schedule_once_completed(last: asyncio.Task, user: discord.User, reminder: MemberReminder):
+        dormant = asyncio.create_task(asyncio.sleep(DEGENERACY_DELAY.total_seconds()))
+
+        async def schedule_once_completed(
+            last: asyncio.Task, user: discord.User, reminder: MemberReminder
+        ):
             await asyncio.wait_for(last, timeout=None)
             await self.handle_reminder(user, reminder)
 
         async with asyncio.TaskGroup() as tg:
             for reminder in reminders:
                 if reminder.reminder_id in self.active:
-                    logger.debug('Reminder already active. (skipping)')
+                    logger.debug("Reminder already active. (skipping)")
                     continue
                 user = self.bot.get_user(reminder.user_id)
                 if not user:
-                    logger.warning(f'User {reminder.user_id} not found. (skipping)')
+                    logger.warning(f"User {reminder.user_id} not found. (skipping)")
                     continue
 
                 if reminder.timestamp <= timezone.now():
                     dormant = tg.create_task(schedule_once_completed(dormant, user, reminder))
-                    logger.debug(f'Dormant timer running: {reminder.reminder_id}')
+                    logger.debug(f"Dormant timer running: {reminder.reminder_id}")
                 else:
                     task = asyncio.create_task(self.handle_reminder(user, reminder))
                     self.active[reminder.reminder_id] = task
                     task.add_done_callback(self.removal_callback(reminder.reminder_id))
-                    logger.debug(f'Active timer running: {reminder.reminder_id}')
+                    logger.debug(f"Active timer running: {reminder.reminder_id}")
 
-                logger.debug(f'Active reminders: {len(self.active)}')
+                logger.debug(f"Active reminders: {len(self.active)}")
 
     @commands.hybrid_group()
     async def reminder(self, ctx: commands.Context):
@@ -86,18 +90,14 @@ class Reminder(commands.Cog):
         Commands for handling reminders.
         """
         await available_subcommands(ctx)
-    
-    @reminder.command(aliases=['add'])
-    @app_commands.rename(terminus='duration')
+
+    @reminder.command(aliases=["add"])
+    @app_commands.rename(terminus="duration")
     async def create(self, ctx: commands.Context, terminus: DatetimeConverter, *, message):
         """
         Create a reminder.
         """
-        values = dict(
-            user_id = ctx.author.id,
-            message = message,
-            timestamp = terminus
-        )
+        values = dict(user_id=ctx.author.id, message=message, timestamp=terminus)
         reminder = await MemberReminder.create(**values)
         logger.debug(f"User {ctx.author.id} scheduled a reminder for {terminus}.")
         task = asyncio.create_task(self.handle_reminder(ctx.author, reminder))
@@ -105,34 +105,38 @@ class Reminder(commands.Cog):
         task.add_done_callback(self.removal_callback(reminder.reminder_id))
         await ctx.send(f'Reminder set for {format_dt(terminus)} ({format_dt(terminus, "R")}).')
 
-    @reminder.command(aliases=['remove'])
+    @reminder.command(aliases=["remove"])
     async def delete(self, ctx: commands.Context, id: int):
         """
         Delete a reminder.
         """
-        reminder = await MemberReminder.get_or_none(reminder_id = id)
+        reminder = await MemberReminder.get_or_none(reminder_id=id)
         if not reminder:
-            await ctx.send(f'Invalid reminder ID!')
+            await ctx.send("Invalid reminder ID!")
             return
         task = self.active[id]
         task.cancel()
-        
+
         await reminder.delete()
-        await ctx.send(f'Reminder with ID {id} has been deleted.')
-    
+        await ctx.send(f"Reminder with ID {id} has been deleted.")
+
     @reminder.command()
     async def list(self, ctx: commands.Context):
         """
         List your active reminders.
-        """ 
+        """
         user_reminders = await MemberReminder.filter(user_id=ctx.author.id)
 
         embed_dict = dict(
-            title = f'Reminders for {ctx.author.name}#{ctx.author.discriminator}.',
-            description = f'Here is a list of your active reminders.',
+            title=f"Reminders for {ctx.author.name}#{ctx.author.discriminator}.",
+            description="Here is a list of your active reminders.",
         )
-        if ctx.author.accent_color: embed_dict['color'] = ctx.author.accent_color.value
-        names = [f'[ID: {reminder.reminder_id}] {format_dt(reminder.timestamp)}' for reminder in user_reminders]
+        if ctx.author.accent_color:
+            embed_dict["color"] = ctx.author.accent_color.value
+        names = [
+            f"[ID: {reminder.reminder_id}] {format_dt(reminder.timestamp)}"
+            for reminder in user_reminders
+        ]
         values = [reminder.message for reminder in user_reminders]
 
         embeds = paginated_embed_menus(names, values, embed_dict=embed_dict)

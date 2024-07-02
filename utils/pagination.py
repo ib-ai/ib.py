@@ -8,18 +8,19 @@ from discord.ext import commands
 from utils.misc import truncate
 
 
-
 NAME_SIZE_LIMIT = 256
 VALUE_SIZE_LIMIT = 1024
+
+
 def paginated_embed_menus(
-        names: Collection[str],
-        values: Collection[str],
-        pagesize: int = 10,
-        *,
-        inline: Union[Collection[bool], bool] = False,
-        embed_dict: Optional[dict] = None,
-        empty_desc: str = 'No entries found.',
-    ) -> Collection[discord.Embed]:
+    names: Collection[str],
+    values: Collection[str],
+    pagesize: int = 10,
+    *,
+    inline: Union[Collection[bool], bool] = False,
+    embed_dict: Optional[dict] = None,
+    empty_desc: str = "No entries found.",
+) -> Collection[discord.Embed]:
     """
     Generates embeds for a paginated embed view.
 
@@ -39,23 +40,31 @@ def paginated_embed_menus(
         Description to be set when names/values is empty.
     """
     N = len(names)
-    if N != len(values): raise ValueError('names and values for paginated embed menus must be of equal length.')
+    if N != len(values):
+        raise ValueError("names and values for paginated embed menus must be of equal length.")
     if isinstance(inline, bool):
-        inline = [inline]*N
-    elif N != len(inline): raise ValueError('"inline" must be boolean or a collection of booleans of equal length to names/values for paginated embed menus.')
+        inline = [inline] * N
+    elif N != len(inline):
+        raise ValueError(
+            '"inline" must be boolean or a collection of booleans of equal length to names/values for paginated embed menus.'
+        )
 
     if embed_dict:
-        if 'title' in embed_dict and len(embed_dict['title']) > 256: raise ValueError('title cannot be over 256 characters')
-        if 'description' in embed_dict and len(embed_dict['description']) > 4096: raise ValueError('description cannot be over 4096 characters')
-        if 'footer' in embed_dict: raise ValueError('embed_dict "footer" key must not be set.')
-        if 'fields' in embed_dict: raise ValueError('embed_dict "fields" key must not be set.')
+        if "title" in embed_dict and len(embed_dict["title"]) > 256:
+            raise ValueError("title cannot be over 256 characters")
+        if "description" in embed_dict and len(embed_dict["description"]) > 4096:
+            raise ValueError("description cannot be over 4096 characters")
+        if "footer" in embed_dict:
+            raise ValueError('embed_dict "footer" key must not be set.')
+        if "fields" in embed_dict:
+            raise ValueError('embed_dict "fields" key must not be set.')
     else:
         embed_dict = {  # default
-            'description': 'Here is a list of entries.'
+            "description": "Here is a list of entries."
         }
-    
+
     if N == 0:
-        embed_dict['description'] = empty_desc
+        embed_dict["description"] = empty_desc
         return [discord.Embed.from_dict(embed_dict)]
 
     embeds: Collection[discord.Embed] = []
@@ -63,7 +72,9 @@ def paginated_embed_menus(
     pages = 1
     items = 0
     for name, value, inline_field in zip(names, values, inline):
-        if items == pagesize or len(current) + len(name) + len(value) > 5090:  # leave 10 chars for footers
+        if (
+            items == pagesize or len(current) + len(name) + len(value) > 5090
+        ):  # leave 10 chars for footers
             embeds.append(current)
             current = discord.Embed.from_dict(embed_dict)
             pages += 1
@@ -84,6 +95,7 @@ class PaginationView(ui.View):
     """
     A class that handles pagination of embeds using Discord buttons.
     """
+
     def __init__(self, ctx: commands.Context, embeds: Collection[discord.Embed]):
         """
         Parameters
@@ -98,12 +110,12 @@ class PaginationView(ui.View):
         current_page : int
             Current page index.
         """
-        super().__init__(timeout = 60)
+        super().__init__(timeout=60)
         self.ctx = ctx
         self.embeds = embeds
         self.current_page = 0
 
-    @ui.button(emoji=u"\u23EA", style=discord.ButtonStyle.blurple)
+    @ui.button(emoji="\u23ea", style=discord.ButtonStyle.blurple)
     async def first_page(self, interaction: discord.Interaction, _):
         """
         Goes to the first page.
@@ -111,8 +123,8 @@ class PaginationView(ui.View):
         self.current_page = 0
         self.update_buttons()
         await self.update_view(interaction)
-    
-    @ui.button(emoji=u"\u2B05", style=discord.ButtonStyle.blurple)
+
+    @ui.button(emoji="\u2b05", style=discord.ButtonStyle.blurple)
     async def before_page(self, interaction: discord.Interaction, _):
         """
         Goes to the previous page.
@@ -121,8 +133,8 @@ class PaginationView(ui.View):
             self.current_page -= 1
             self.update_buttons()
             await self.update_view(interaction)
-    
-    @ui.button(emoji=u"\u27A1", style=discord.ButtonStyle.blurple)
+
+    @ui.button(emoji="\u27a1", style=discord.ButtonStyle.blurple)
     async def next_page(self, interaction: discord.Interaction, _):
         """
         Goes to the next page.
@@ -131,8 +143,8 @@ class PaginationView(ui.View):
             self.current_page += 1
             self.update_buttons()
             await self.update_view(interaction)
-    
-    @ui.button(emoji=u"\u23E9", style=discord.ButtonStyle.blurple)
+
+    @ui.button(emoji="\u23e9", style=discord.ButtonStyle.blurple)
     async def last_page(self, interaction: discord.Interaction, _):
         """
         Goes to the last page.
@@ -145,7 +157,8 @@ class PaginationView(ui.View):
         """
         Updates the buttons based on the current page.
         """
-        for i in self.children: i.disabled = False
+        for i in self.children:
+            i.disabled = False
         if self.current_page == 0:
             self.children[0].disabled = True
             self.children[1].disabled = True
@@ -158,11 +171,12 @@ class PaginationView(ui.View):
         Updates the embed and view.
         """
         await interaction.response.edit_message(
-            embed = self.embeds[self.current_page],
-            view = self
+            embed=self.embeds[self.current_page], view=self
         )
 
-    async def return_paginated_embed_view(self) -> tuple[discord.Embed, discord.ui.View | None]:
+    async def return_paginated_embed_view(
+        self,
+    ) -> tuple[discord.Embed, discord.ui.View | None]:
         """
         Returns the first embed and containing view.
         """
@@ -170,6 +184,6 @@ class PaginationView(ui.View):
             no_data_embed = discord.Embed(description="No data available.")
             return [no_data_embed, None]
 
-        self.update_buttons() # Disable buttons if there's only one embed
+        self.update_buttons()  # Disable buttons if there's only one embed
 
         return self.embeds[self.current_page], self

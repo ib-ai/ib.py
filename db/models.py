@@ -22,8 +22,7 @@ class ChannelType(str, enum.Enum):
 
 
 class GuildData(Model):
-
-    class Meta():
+    class Meta:
         table = "guild_data"
 
     guild_id = fields.BigIntField(pk=True, unique=True)
@@ -37,9 +36,7 @@ class GuildData(Model):
     helper_id = fields.BigIntField(null=True)
     filtering = fields.BooleanField(default=False)
     removal = fields.BooleanField(default=False)
-    suppressed_channels = ArrayField(element_type="bigint",
-                                     null=True,
-                                     default=list)
+    suppressed_channels = ArrayField(element_type="bigint", null=True, default=list)
     monitoring_user = fields.BooleanField(default=False)
     monitoring_message = fields.BooleanField(default=False)
     monitor_user_log_id = fields.BigIntField(null=True)
@@ -47,8 +44,7 @@ class GuildData(Model):
 
 
 class GuildSnapshot(Model):
-
-    class Meta():
+    class Meta:
         table = "snapshot"
 
     snapshot_id = fields.IntField(pk=True)
@@ -58,8 +54,7 @@ class GuildSnapshot(Model):
 
 
 class GuildCassowary(Model):
-
-    class Meta():
+    class Meta:
         table = "cassowary"
 
     cassowary_id = fields.IntField(pk=True)
@@ -68,18 +63,16 @@ class GuildCassowary(Model):
 
 
 class GuildCassowaryRoles(Model):
-
-    class Meta():
+    class Meta:
         table = "cassowary_roles"
 
     category_role_id = fields.BigIntField(pk=True)
     role_id = fields.BigIntField()
-    cassowary_id = fields.OneToOneField('models.GuildCassowary')
+    cassowary_id = fields.OneToOneField("models.GuildCassowary")
 
 
 class GuildVoteLadder(Model):
-
-    class Meta():
+    class Meta:
         table = "vote_ladder"
 
     vote_ladder_id = fields.IntField(pk=True)
@@ -92,8 +85,7 @@ class GuildVoteLadder(Model):
 
 
 class GuildVote(Model):
-
-    class Meta():
+    class Meta:
         table = "vote"
 
     vote_id = fields.IntField(pk=True)
@@ -103,15 +95,14 @@ class GuildVote(Model):
     negative = fields.IntField(default=0)
     expiry = fields.IntField(default=604800)  # 1 week in seconds
     finished = fields.BooleanField(default=False)
-    vote_ladder_id = fields.OneToOneField('models.GuildVoteLadder')
+    vote_ladder_id = fields.OneToOneField("models.GuildVoteLadder")
 
 
 # Staff Tables
 
 
 class StaffTag(Model):
-
-    class Meta():
+    class Meta:
         table = "tag"
 
     tag_id = fields.IntField(pk=True)
@@ -121,8 +112,7 @@ class StaffTag(Model):
 
 
 class StaffNote(Model):
-
-    class Meta():
+    class Meta:
         table = "note"
 
     note_id = fields.IntField(pk=True)
@@ -133,8 +123,7 @@ class StaffNote(Model):
 
 
 class StaffMonitorUser(Model):
-
-    class Meta():
+    class Meta:
         table = "monitor_user"
 
     monitor_user_id = fields.IntField(pk=True)
@@ -142,21 +131,19 @@ class StaffMonitorUser(Model):
 
 
 class StaffMonitorMessageGroups(Model):
-
-    class Meta():
+    class Meta:
         table = "monitor_message_groups"
 
     group_id = fields.IntField(pk=True)
     name = fields.CharField(max_length=256)
     disabled = fields.BooleanField(default=False)
-    monitor_messages: fields.ManyToManyRelation[
-        "StaffMonitorMessage"] = fields.ManyToManyField(
-            'models.StaffMonitorMessage', related_name="groups")
+    monitor_messages: fields.ManyToManyRelation["StaffMonitorMessage"] = (
+        fields.ManyToManyField("models.StaffMonitorMessage", related_name="groups")
+    )
 
 
 class StaffMonitorMessage(Model):
-
-    class Meta():
+    class Meta:
         table = "monitor_message"
 
     monitor_message_id = fields.IntField(pk=True)
@@ -165,8 +152,7 @@ class StaffMonitorMessage(Model):
 
 
 class StaffFilter(Model):
-
-    class Meta():
+    class Meta:
         table = "filter"
 
     filter_id = fields.IntField(pk=True)
@@ -175,8 +161,7 @@ class StaffFilter(Model):
 
 
 class StaffReaction(Model):
-
-    class Meta():
+    class Meta:
         table = "reaction"
 
     reaction_id = fields.IntField(pk=True)
@@ -185,20 +170,18 @@ class StaffReaction(Model):
 
 
 class StaffButtonRole(Model):
-
-    class Meta():
+    class Meta:
         table = "buttonrole"
 
     button_role_id = fields.IntField(pk=True)
     emoji_id = fields.BigIntField()
     label = fields.CharField(max_length=256)
     role_ids = ArrayField()
-    reaction_id = fields.OneToOneField('models.StaffReaction')
+    reaction_id = fields.OneToOneField("models.StaffReaction")
 
 
 class StaffPunishment(Model):
-
-    class Meta():
+    class Meta:
         table = "punishment"
 
     punishment_id = fields.IntField(pk=True)
@@ -218,8 +201,7 @@ class StaffPunishment(Model):
 
 
 class HelperMessage(Model):
-
-    class Meta():
+    class Meta:
         table = "helper_message"
 
     helper_message_id = fields.IntField(pk=True)
@@ -232,8 +214,7 @@ class HelperMessage(Model):
 
 
 class MemberRole(Model):
-
-    class Meta():
+    class Meta:
         table = "member_role"
 
     user_id = fields.BigIntField(pk=True)
@@ -241,8 +222,7 @@ class MemberRole(Model):
 
 
 class MemberOpt(Model):
-
-    class Meta():
+    class Meta:
         table = "member_opt"
 
     opt_id = fields.IntField(pk=True)
@@ -251,8 +231,7 @@ class MemberOpt(Model):
 
 
 class MemberReminder(Model):
-
-    class Meta():
+    class Meta:
         table = "member_reminder"
 
     reminder_id = fields.IntField(pk=True)

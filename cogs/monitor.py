@@ -3,7 +3,12 @@ from typing import Literal, Optional
 import discord
 from discord.ext import commands
 from db.cached import get_all_monitor_messages, get_all_monitor_users, get_guild_data
-from db.models import GuildData, StaffMonitorMessage, StaffMonitorUser, StaffMonitorMessageGroups
+from db.models import (
+    GuildData,
+    StaffMonitorMessage,
+    StaffMonitorUser,
+    StaffMonitorMessageGroups,
+)
 
 from utils.checks import admin_command, cogify, staff_command
 from utils.commands import available_subcommands
@@ -11,7 +16,9 @@ from utils.converters import ListConverter, RegexConverter
 from utils.pagination import paginated_embed_menus, PaginationView
 
 import logging
+
 logger = logging.getLogger(__name__)
+
 
 class Monitor(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -31,7 +38,7 @@ class Monitor(commands.Cog):
         # If bot, return
         if message.author.bot:
             return
-        
+
         # TODO Add check for config for NSA Deny List
 
         guild_data = await get_guild_data(guild_id=message.guild.id)
@@ -39,17 +46,21 @@ class Monitor(commands.Cog):
         # If no guild data return
         if not guild_data:
             return
-        
+
         # Monitored Users
         if guild_data.monitoring_user and guild_data.monitor_user_log_id:
             monitor_users = [user.user_id for user in await get_all_monitor_users()]
             if message.author.id in monitor_users:
                 await log_suspicious_message(guild_data.monitor_user_log_id, message)
                 return
-        
+
         # Monitored Messages
         if guild_data.monitoring_message and guild_data.monitor_message_log_id:
-            monitor_messages = [pattern.message for pattern in await get_all_monitor_messages() if not pattern.disabled]
+            monitor_messages = [
+                pattern.message
+                for pattern in await get_all_monitor_messages()
+                if not pattern.disabled
+            ]
             for pattern in monitor_messages:
                 if re.search(pattern, message.content, re.IGNORECASE):
                     await log_suspicious_message(guild_data.monitor_message_log_id, message)
@@ -72,35 +83,43 @@ class Monitor(commands.Cog):
         """
         await available_subcommands(ctx)
 
-    @channel.command(name='user')
+    @channel.command(name="user")
     @admin_command()
-    async def channel_user(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
+    async def channel_user(
+        self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None
+    ):
         """
         Set logger channel for monitored users.
         """
-        values = dict(monitor_user_log_id = channel.id if channel else None)
+        values = dict(monitor_user_log_id=channel.id if channel else None)
         await GuildData.update_or_create(values, guild_id=ctx.guild.id)
         get_guild_data.cache_clear()
 
         if channel:
-            await ctx.send(f'Log channel for monitored users set to <#{channel.id}> for this guild.')
+            await ctx.send(
+                f"Log channel for monitored users set to <#{channel.id}> for this guild."
+            )
         else:
-            await ctx.send('Log channel for monitored users removed for this guild.')
-    
-    @channel.command(name='message')
+            await ctx.send("Log channel for monitored users removed for this guild.")
+
+    @channel.command(name="message")
     @admin_command()
-    async def channel_message(self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None):
+    async def channel_message(
+        self, ctx: commands.Context, channel: Optional[discord.TextChannel] = None
+    ):
         """
         Set logger channel for monitored message patterns.
         """
-        values = dict(monitor_message_log_id = channel.id if channel else None)
+        values = dict(monitor_message_log_id=channel.id if channel else None)
         await GuildData.update_or_create(values, guild_id=ctx.guild.id)
         get_guild_data.cache_clear()
 
         if channel:
-            await ctx.send(f'Log channel for monitored messages set to <#{channel.id}> for this guild.')
+            await ctx.send(
+                f"Log channel for monitored messages set to <#{channel.id}> for this guild."
+            )
         else:
-            await ctx.send('Log channel for monitored messages removed for this guild.')
+            await ctx.send("Log channel for monitored messages removed for this guild.")
 
     @monitor.command()
     async def cleanup(self, ctx: commands.Context):
@@ -117,12 +136,14 @@ class Monitor(commands.Cog):
                 users_removed += 1
 
         get_all_monitor_users.cache_clear()
-        
+
         logger.debug(f"{users_removed} user(s) were removed from monitor.")
         await ctx.send(f"{users_removed} user(s) were removed from monitor.")
-    
+
     @monitor.command()
-    async def list(self, ctx: commands.Context, type: Optional[Literal['messages', 'users']] = None):
+    async def list(
+        self, ctx: commands.Context, type: Optional[Literal["messages", "users"]] = None
+    ):
         """
         List of monitored message patterns and monitored users.
         """
@@ -130,8 +151,13 @@ class Monitor(commands.Cog):
         entries = []
 
         if not type or type == "messages":
-            monitor_messages = sorted(await get_all_monitor_messages(), key=lambda x: x.monitor_message_id)
-            names += [f"{'[Disabled] ' if pattern.disabled else ''}Regex (ID: `{pattern.monitor_message_id}`)" for pattern in monitor_messages]
+            monitor_messages = sorted(
+                await get_all_monitor_messages(), key=lambda x: x.monitor_message_id
+            )
+            names += [
+                f"{'[Disabled] ' if pattern.disabled else ''}Regex (ID: `{pattern.monitor_message_id}`)"
+                for pattern in monitor_messages
+            ]
             entries += [f"```{pattern.message}```" for pattern in monitor_messages]
 
         if not type or type == "users":
@@ -140,7 +166,9 @@ class Monitor(commands.Cog):
             entries += [f"<@{user.user_id}>" for user in monitor_users]
 
         embeds = paginated_embed_menus(names, entries)
-        monitor_embed, monitor_view = await PaginationView(ctx, embeds).return_paginated_embed_view()
+        monitor_embed, monitor_view = await PaginationView(
+            ctx, embeds
+        ).return_paginated_embed_view()
 
         await ctx.send(embed=monitor_embed, view=monitor_view)
 
@@ -150,8 +178,8 @@ class Monitor(commands.Cog):
         Commands for monitoring problematic message patterns.
         """
         await available_subcommands(ctx)
-    
-    @message.command(aliases=['add'], name='create')
+
+    @message.command(aliases=["add"], name="create")
     async def message_create(self, ctx: commands.Context, *, pattern: RegexConverter):
         """
         Create a monitor for a message pattern.
@@ -167,13 +195,15 @@ class Monitor(commands.Cog):
 
         logger.debug(f"Added pattern {pattern} to monitor.")
         await ctx.send(f"The pattern (`{pattern}`) has been successfully added to monitor.")
-    
-    @message.command(aliases=['remove'], name='delete')
+
+    @message.command(aliases=["remove"], name="delete")
     async def message_delete(self, ctx: commands.Context, pattern_id: int):
         """
         Delete a monitor for a message pattern.
         """
-        monitored_message = await StaffMonitorMessage.filter(monitor_message_id=pattern_id).get_or_none()
+        monitored_message = await StaffMonitorMessage.filter(
+            monitor_message_id=pattern_id
+        ).get_or_none()
 
         if not monitored_message:
             await ctx.send(f"The pattern with ID `{pattern_id}` does not exist.")
@@ -183,25 +213,36 @@ class Monitor(commands.Cog):
         get_all_monitor_messages.cache_clear()
 
         logger.debug(f"Removed pattern {monitored_message.message} from monitor.")
-        await ctx.send(f"The pattern (`{monitored_message.message}`) has been successfully removed from monitor.")
+        await ctx.send(
+            f"The pattern (`{monitored_message.message}`) has been successfully removed from monitor."
+        )
 
-    @message.command(name='toggle')
+    @message.command(name="toggle")
     async def message_toggle(self, ctx: commands.Context, pattern_id: int):
         """
         Toggle a monitor for a message pattern.
         """
-        monitored_message = await StaffMonitorMessage.filter(monitor_message_id=pattern_id).get_or_none()
+        monitored_message = await StaffMonitorMessage.filter(
+            monitor_message_id=pattern_id
+        ).get_or_none()
 
         if not monitored_message:
             await ctx.send(f"Pattern with ID `{pattern_id}` does not exist.")
             return
-        
+
         monitored_message.disabled = not monitored_message.disabled
         await monitored_message.save()
         get_all_monitor_messages.cache_clear()
 
-        logger.debug(f"{'Disabled' if monitored_message.disabled else 'Enabled'} pattern with ID {monitored_message.monitor_message_id} in monitor.")
-        await ctx.send(f"The pattern (`{monitored_message.message}`) [ID: {monitored_message.monitor_message_id}] has been successfully {'disabled' if monitored_message.disabled else 'enabled'}.")
+        status = "Disabled" if monitored_message.disabled else "Enabled"
+        logger.debug(
+            f"{status} pattern with ID {monitored_message.monitor_message_id} in monitor."
+        )
+        await ctx.send(
+            f"The pattern (`{monitored_message.message}`) "
+            f"[ID: {monitored_message.monitor_message_id}] "
+            f"has been successfully {status.lower()}."
+        )
 
     @monitor.group()
     async def user(self, ctx: commands.Context):
@@ -209,8 +250,8 @@ class Monitor(commands.Cog):
         Commands for monitoring problematic users.
         """
         await available_subcommands(ctx)
-    
-    @user.command(aliases=['add'], name='create')
+
+    @user.command(aliases=["add"], name="create")
     async def user_create(self, ctx: commands.Context, member: discord.Member):
         """
         Create a monitor for a user.
@@ -226,8 +267,8 @@ class Monitor(commands.Cog):
 
         logger.debug(f"Added user with id {member.id} to monitor.")
         await ctx.send(f"{member.mention} has been successfully added to monitor.")
-    
-    @user.command(aliases=['remove'], name='delete')
+
+    @user.command(aliases=["remove"], name="delete")
     async def user_delete(self, ctx: commands.Context, member: discord.Member):
         """
         Delete a monitor for a user.
@@ -243,13 +284,15 @@ class Monitor(commands.Cog):
 
         logger.debug(f"Removed user with id {member.id} from monitor.")
         await ctx.send(f"{member.mention} has been successfully removed from monitor.")
-    
+
     @monitor.command()
     @admin_command()
-    async def toggle(self, ctx: commands.Context, type: Optional[Literal['messages','users']] = None):
+    async def toggle(
+        self, ctx: commands.Context, type: Optional[Literal["messages", "users"]] = None
+    ):
         """
         Toggle if monitoring is active for the guild.
-        """ 
+        """
         guild_data = (await GuildData.get_or_create(guild_id=ctx.guild.id))[0]
 
         if not type or type == "messages":
@@ -261,7 +304,9 @@ class Monitor(commands.Cog):
         await guild_data.save()
         get_guild_data.cache_clear()
 
-        await ctx.send(f"Message monitoring {'`enabled`' if guild_data.monitoring_message else '`disabled`'} and user monitoring {'`enabled`' if guild_data.monitoring_user else '`disabled`'} for this guild.")
+        await ctx.send(
+            f"Message monitoring {'`enabled`' if guild_data.monitoring_message else '`disabled`'} and user monitoring {'`enabled`' if guild_data.monitoring_user else '`disabled`'} for this guild."
+        )
 
     @monitor.group()
     async def group(self, ctx: commands.Context):
@@ -270,41 +315,61 @@ class Monitor(commands.Cog):
         """
         await available_subcommands(ctx)
 
-    @group.command(name='add')
-    async def group_add(self, ctx: commands.Context, name: str, monitor_messages: ListConverter):
+    @group.command(name="add")
+    async def group_add(
+        self, ctx: commands.Context, name: str, monitor_messages: ListConverter
+    ):
         """
         Creates new/adds to existing group message monitor.
         """
         if len(monitor_messages) == 0:
-            await ctx.send("You must provide at least one monitored message to add to a group.")
+            await ctx.send(
+                "You must provide at least one monitored message to add to a group."
+            )
             return
 
         if monitor_messages == "*":
-            await ctx.send("You cannot add all messages to a group. Please specify individual patterns to add to the group.")
+            await ctx.send(
+                "You cannot add all messages to a group. Please specify individual patterns to add to the group."
+            )
             return
-        
+
         db_monitor_messages = []
 
         for pattern_id in monitor_messages:
-            db_monitor_message = await StaffMonitorMessage.filter(monitor_message_id=pattern_id).get_or_none()
+            db_monitor_message = await StaffMonitorMessage.filter(
+                monitor_message_id=pattern_id
+            ).get_or_none()
 
             if not db_monitor_message:
                 await ctx.send(f"The pattern with ID `{pattern_id}` could not be found.")
                 return
 
             db_monitor_messages.append(db_monitor_message)
-        
+
         monitor_group = (await StaffMonitorMessageGroups.get_or_create(name=name))[0]
 
         await monitor_group.monitor_messages.add(*db_monitor_messages)
 
-        sorted_group_messages = [message.monitor_message_id async for message in monitor_group.monitor_messages.order_by('monitor_message_id')]
+        sorted_group_messages = [
+            message.monitor_message_id
+            async for message in monitor_group.monitor_messages.order_by("monitor_message_id")
+        ]
 
-        logger.debug(f"Added messages {monitor_messages} to group {name}. Currently contains: {sorted_group_messages}.")
-        await ctx.send(f"Messages `{monitor_messages}` have been successfully added to group `{name}`. This group currently has the following messages: `{sorted_group_messages}`.")
+        logger.debug(
+            f"Added messages {monitor_messages} to group {name}. Currently contains: {sorted_group_messages}."
+        )
+        await ctx.send(
+            f"Messages `{monitor_messages}` have been successfully added to group `{name}`. This group currently has the following messages: `{sorted_group_messages}`."
+        )
 
-    @group.command(name='delete')
-    async def group_delete(self, ctx: commands.Context, name: str, monitor_messages: Optional[ListConverter] = None):
+    @group.command(name="delete")
+    async def group_delete(
+        self,
+        ctx: commands.Context,
+        name: str,
+        monitor_messages: Optional[ListConverter] = None,
+    ):
         """
         Deletes monitored messages from group message monitor, and if empty, deletes the entire group.
         """
@@ -328,14 +393,18 @@ class Monitor(commands.Cog):
             db_monitor_messages = []
 
             for pattern_id in monitor_messages:
-                db_monitor_message = await StaffMonitorMessage.filter(monitor_message_id=pattern_id).get_or_none()
+                db_monitor_message = await StaffMonitorMessage.filter(
+                    monitor_message_id=pattern_id
+                ).get_or_none()
 
                 if not db_monitor_message:
                     await ctx.send(f"The pattern with ID `{pattern_id}` could not be found.")
                     return
-                
+
                 if db_monitor_message not in monitor_group_patterns:
-                    await ctx.send(f"The pattern with ID `{pattern_id}` is not in the monitor group `{name}`.")
+                    await ctx.send(
+                        f"The pattern with ID `{pattern_id}` is not in the monitor group `{name}`."
+                    )
                     return
 
                 db_monitor_messages.append(db_monitor_message)
@@ -343,7 +412,9 @@ class Monitor(commands.Cog):
             await monitor_group.monitor_messages.remove(*db_monitor_messages)
 
             logger.debug(f"Removed patterns {monitor_messages} from group {name}.")
-            await ctx.send(f"Patterns `{monitor_messages}` have been successfully removed from group `{name}`.")
+            await ctx.send(
+                f"Patterns `{monitor_messages}` have been successfully removed from group `{name}`."
+            )
         else:
             # Delete all entries but keep group
             for pattern in monitor_group_patterns:
@@ -351,22 +422,27 @@ class Monitor(commands.Cog):
             await ctx.send(f"Removed all patterns from monitor group `{name}`.")
             logger.debug(f"Removed all patterns from monitor group {name}.")
 
-    @group.command(name='list')
+    @group.command(name="list")
     async def group_list(self, ctx: commands.Context):
         """
         List of monitored message pattern groups.
         """
         monitor_groups = await StaffMonitorMessageGroups.all()
 
-        names = [f"{'[Disabled]' if group.disabled else ''} {group.name}" for group in monitor_groups]
+        names = [
+            f"{'[Disabled]' if group.disabled else ''} {group.name}"
+            for group in monitor_groups
+        ]
         values = await create_formatted_group_message(monitor_groups)
 
         embeds = paginated_embed_menus(names, values)
-        monitor_embed, monitor_view = await PaginationView(ctx, embeds).return_paginated_embed_view()
+        monitor_embed, monitor_view = await PaginationView(
+            ctx, embeds
+        ).return_paginated_embed_view()
 
         await ctx.send(embed=monitor_embed, view=monitor_view)
-    
-    @group.command(name='toggle')
+
+    @group.command(name="toggle")
     async def group_toggle(self, ctx: commands.Context, name: str):
         """
         Toggles a group message monitor on or off.
@@ -386,9 +462,14 @@ class Monitor(commands.Cog):
             await pattern.save()
 
         get_all_monitor_messages.cache_clear()
-        
-        logger.debug(f"Monitor group `{name}` (with {len(monitor_group.monitor_messages)} children) has been {'disabled' if monitor_group.disabled else 'enabled'}.")
-        await ctx.send(f"Monitor group `{name}` (with {len(monitor_group.monitor_messages)} children) has been {'disabled' if monitor_group.disabled else 'enabled'}.")
+
+        logger.debug(
+            f"Monitor group `{name}` (with {len(monitor_group.monitor_messages)} children) has been {'disabled' if monitor_group.disabled else 'enabled'}."
+        )
+        await ctx.send(
+            f"Monitor group `{name}` (with {len(monitor_group.monitor_messages)} children) has been {'disabled' if monitor_group.disabled else 'enabled'}."
+        )
+
 
 async def log_suspicious_message(channel: int, message: discord.Message):
     monitor_channel = message.guild.get_channel(channel)
@@ -398,24 +479,38 @@ async def log_suspicious_message(channel: int, message: discord.Message):
 
     author = f"{message.author.name}#{message.author.discriminator} (ID: {message.author.id})"
 
-    embed = discord.Embed(title=author, description=message.content, color=discord.Colour.red())
+    embed = discord.Embed(
+        title=author, description=message.content, color=discord.Colour.red()
+    )
 
-    embed.set_author(name="Monitor Trigger", icon_url=message.author.display_avatar.url) \
-        .add_field(name="Utilities", value=f"[21 Jump Street]({message.jump_url})\nUser: {message.author.mention}  • Channel: <#{message.channel.id}>", inline=False)
+    embed.set_author(
+        name="Monitor Trigger", icon_url=message.author.display_avatar.url
+    ).add_field(
+        name="Utilities",
+        value=f"[21 Jump Street]({message.jump_url})\nUser: {message.author.mention}  • Channel: <#{message.channel.id}>",
+        inline=False,
+    )
 
     await monitor_channel.send(embed=embed)
 
-async def create_formatted_group_message(monitor_groups: list[StaffMonitorMessageGroups]):
+
+async def create_formatted_group_message(
+    monitor_groups: list[StaffMonitorMessageGroups],
+):
     formatted_messages = []
-    
+
     for group in monitor_groups:
-        sorted_messages = await group.monitor_messages.all().order_by('monitor_message_id')
-        message_lines = [f'[ID: {pattern.monitor_message_id}] {pattern.message}' for pattern in sorted_messages]
+        sorted_messages = await group.monitor_messages.all().order_by("monitor_message_id")
+        message_lines = [
+            f"[ID: {pattern.monitor_message_id}] {pattern.message}"
+            for pattern in sorted_messages
+        ]
 
         # chr(10) returns \n as backslashes cannot be used in f-string expressions
         formatted_messages.append(f"```{chr(10).join(message_lines)}```")
 
     return formatted_messages
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Monitor(bot))

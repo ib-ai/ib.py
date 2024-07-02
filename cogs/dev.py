@@ -35,9 +35,9 @@ class Dev(commands.Cog):
         """
         Display all guild data.
         """
-        raise NotImplementedError('Command requires implementation and permission set-up.')
+        raise NotImplementedError("Command requires implementation and permission set-up.")
 
-    @commands.command(name='eval')
+    @commands.command(name="eval")
     async def evaluate(self, ctx: commands.Context, *, code: str):
         """
         Run python code.
@@ -50,7 +50,7 @@ class Dev(commands.Cog):
             "channel": ctx.channel,
             "author": ctx.author,
             "guild": ctx.guild,
-            "message": ctx.message
+            "message": ctx.message,
         }
 
         stdout = io.StringIO()
@@ -58,7 +58,8 @@ class Dev(commands.Cog):
         try:
             with contextlib.redirect_stdout(stdout):
                 exec(
-                    f"async def func():\n{textwrap.indent(code, '    ')}", local_variables,
+                    f"async def func():\n{textwrap.indent(code, '    ')}",
+                    local_variables,
                 )
 
                 obj = await local_variables["func"]()
@@ -69,7 +70,12 @@ class Dev(commands.Cog):
         await ctx.send(result[0:2000])
 
     @commands.command()
-    async def sync(self, ctx: commands.Context, guilds: commands.Greedy[discord.Object], spec: Optional[Literal["~", "*", "^"]] = None) -> None:
+    async def sync(
+        self,
+        ctx: commands.Context,
+        guilds: commands.Greedy[discord.Object],
+        spec: Optional[Literal["~", "*", "^"]] = None,
+    ) -> None:
         """
         Syncs app commands to Discord.
         """

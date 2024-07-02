@@ -11,7 +11,9 @@ from utils.misc import truncate
 from utils.pagination import PaginationView, paginated_embed_menus
 
 import logging
+
 logger = logging.getLogger(__name__)
+
 
 class Filter(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -50,7 +52,12 @@ class Filter(commands.Cog):
             start, end = match.span()
             formatted_filter = f"{message.content[:start]}**{message.content[start:end]}**{message.content[end:]}"
 
-            await log_filtered_message(guild_data.monitor_message_log_id, message, formatted_filter, filter.notify)
+            await log_filtered_message(
+                guild_data.monitor_message_log_id,
+                message,
+                formatted_filter,
+                filter.notify,
+            )
             await message.delete()
 
             dm_filter_message = (
@@ -73,7 +80,7 @@ class Filter(commands.Cog):
         """
         await available_subcommands(ctx)
 
-    @filter.command(aliases=['add'])
+    @filter.command(aliases=["add"])
     async def create(self, ctx: commands.Context, *, pattern: RegexConverter):
         """
         Create a filter.
@@ -85,16 +92,18 @@ class Filter(commands.Cog):
             return
 
         if len(pattern) > 1024:
-            await ctx.send(f"The pattern provided is longer than 1024 characters.")
+            await ctx.send("The pattern provided is longer than 1024 characters.")
             return
 
         await StaffFilter.create(trigger=pattern)
         get_all_filters.cache_clear()
 
         logger.debug(f"Added pattern {pattern} to filters.")
-        await ctx.send(f"The pattern (`{pattern}`) has been successfully added to filtered messages.")
+        await ctx.send(
+            f"The pattern (`{pattern}`) has been successfully added to filtered messages."
+        )
 
-    @filter.command(aliases=['remove'])
+    @filter.command(aliases=["remove"])
     async def delete(self, ctx: commands.Context, filter_id: int):
         """
         Delete a filter.
@@ -109,7 +118,9 @@ class Filter(commands.Cog):
         get_all_filters.cache_clear()
 
         logger.debug(f"Removed {filtered_message.trigger} from filters.")
-        await ctx.send(f"The pattern (`{filtered_message.trigger}`) has been successfully removed from filtered messages.")
+        await ctx.send(
+            f"The pattern (`{filtered_message.trigger}`) has been successfully removed from filtered messages."
+        )
 
     @filter.command()
     async def list(self, ctx: commands.Context):
@@ -118,11 +129,16 @@ class Filter(commands.Cog):
         """
         filtered_messages = sorted(await get_all_filters(), key=lambda x: x.filter_id)
 
-        names = [f"{'[Notify] ' if filter.notify else ''}Filter (ID: `{filter.filter_id}`)" for filter in filtered_messages]
-        entries =[f"```{filter.trigger}```" for filter in filtered_messages]
+        names = [
+            f"{'[Notify] ' if filter.notify else ''}Filter (ID: `{filter.filter_id}`)"
+            for filter in filtered_messages
+        ]
+        entries = [f"```{filter.trigger}```" for filter in filtered_messages]
 
         embeds = paginated_embed_menus(names, entries)
-        filter_embed, filter_view = await PaginationView(ctx, embeds).return_paginated_embed_view()
+        filter_embed, filter_view = await PaginationView(
+            ctx, embeds
+        ).return_paginated_embed_view()
 
         await ctx.send(embed=filter_embed, view=filter_view)
 
@@ -142,8 +158,12 @@ class Filter(commands.Cog):
         await filtered_message.save()
         get_all_filters.cache_clear()
 
-        logger.debug(f"{'Enabled' if filtered_message.notify else 'Disabled'} notify for filter with ID {filtered_message.filter_id}.")
-        await ctx.send(f"The ping notification for filter (`{filtered_message.trigger}`) [ID: {filtered_message.filter_id}] has been successfully {'enabled' if filtered_message.notify else 'disabled'}.")
+        logger.debug(
+            f"{'Enabled' if filtered_message.notify else 'Disabled'} notify for filter with ID {filtered_message.filter_id}."
+        )
+        await ctx.send(
+            f"The ping notification for filter (`{filtered_message.trigger}`) [ID: {filtered_message.filter_id}] has been successfully {'enabled' if filtered_message.notify else 'disabled'}."
+        )
 
     @filter.command()
     async def toggle(self, ctx: commands.Context):
@@ -157,9 +177,14 @@ class Filter(commands.Cog):
         await guild_data.save()
         get_guild_data.cache_clear()
 
-        await ctx.send(f"Message filtering {'`enabled`' if guild_data.filtering else '`disabled`'} for this guild.")
+        await ctx.send(
+            f"Message filtering {'`enabled`' if guild_data.filtering else '`disabled`'} for this guild."
+        )
 
-async def log_filtered_message(channel: int, message: discord.Message, formatted_message: str, notify: bool):
+
+async def log_filtered_message(
+    channel: int, message: discord.Message, formatted_message: str, notify: bool
+):
     filter_channel = message.guild.get_channel(channel)
 
     if not filter_channel:
@@ -167,10 +192,16 @@ async def log_filtered_message(channel: int, message: discord.Message, formatted
 
     author = f"{message.author.name}#{message.author.discriminator} (ID: {message.author.id})"
 
-    description = f"\"{formatted_message}\", sent in **<#{message.channel.id}>** by <@{message.author.id}>"
-    description = truncate(description, 950) # Accounts for above characters and a lenient snowflake value
+    description = (
+        f'"{formatted_message}", sent in **<#{message.channel.id}>** by <@{message.author.id}>'
+    )
+    description = truncate(
+        description, 950
+    )  # Accounts for above characters and a lenient snowflake value
 
-    embed = discord.Embed(title=author, description=description, color=discord.Colour.magenta())
+    embed = discord.Embed(
+        title=author, description=description, color=discord.Colour.magenta()
+    )
 
     embed.set_author(name="Filter was triggered!", icon_url=message.author.display_avatar.url)
 
@@ -178,6 +209,7 @@ async def log_filtered_message(channel: int, message: discord.Message, formatted
 
     if notify:
         await filter_channel.send("@here")
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Filter(bot))
