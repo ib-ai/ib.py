@@ -92,7 +92,7 @@ class Updates(commands.Cog):
             update_content = "\n- ".join([update_date, *updates])
             await updates_channel.send(content=update_content)
 
-        await ctx.send(f'Added update(s): `{"`,`".join(updates)}`')
+        await ctx.send(f"Added update(s): `{'`,`'.join(updates)}`")
 
     @update.command(aliases=["remove"])
     async def delete(
@@ -126,7 +126,7 @@ class Updates(commands.Cog):
             new = "\n- ".join(remaining)
             await message.edit(content=new)
 
-        await ctx.send(f'Removed update(s): `{"`,`".join(removed)}`')
+        await ctx.send(f"Removed update(s): `{'`,`'.join(removed)}`")
 
 
 async def setup(bot: commands.Bot):

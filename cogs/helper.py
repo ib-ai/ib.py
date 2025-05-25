@@ -6,8 +6,8 @@ from typing import Union
 
 class Helper(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
-        self.bot = bot        
-        self.subjects = toml.load('config.toml')['subjects']
+        self.bot = bot
+        self.subjects = toml.load("config.toml")["subjects"]
         self.subject_channels = self.subjects.keys()
         # Ensure that each entry in self.subjects is a list of roles, even if it contains just one role
         self.helper_ids = [self.subjects[channel] for channel in self.subject_channels]
@@ -32,12 +32,12 @@ class Helper(commands.Cog):
         user_role_ids = [role.id for role in user.roles]
         flat_helper_ids = [role for sublist in self.helper_ids for role in sublist]
         if not any(role in flat_helper_ids for role in user_role_ids):
-            message = 'Only subject helpers can pin messages.'
+            message = "Only subject helpers can pin messages."
             await self.send_error(obj, message)
             return False
         channel_list = [int(channel) for channel in list(self.subject_channels)]
         if channel_id not in channel_list:
-            message = 'You may only pin messages in subject channels.'
+            message = "You may only pin messages in subject channels."
             await self.send_error(obj, message)
             return False
         valid_roles = [self.subjects[str(channel_id)]]
