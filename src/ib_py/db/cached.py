@@ -1,5 +1,5 @@
 from async_lru import alru_cache
-from db.models import (
+from .models import (
     GuildData,
     StaffFilter,
     StaffMonitorMessage,

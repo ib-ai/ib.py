@@ -25,7 +25,7 @@ class Helpermessage(commands.Cog):
     @helpermessage.command()
     async def list(self, ctx: commands.Context):
         """
-        List all active helpermessage embeds
+        List all active helpermessage embeds.
         """
         embed_dict = dict(
             title="List of all active helpermessages",
@@ -58,7 +58,7 @@ class Helpermessage(commands.Cog):
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
         """
-        Update helper message based on user helper/dehelper.
+        Update the respective helpermessage embed based on a user becoming/retiring from helper.
         """
         # checking if there has been a change in roles
         if before.roles != after.roles:
@@ -105,7 +105,7 @@ class Helpermessage(commands.Cog):
         helper_roles: commands.Greedy[discord.Role],
     ):
         """
-        Create the helpermessage embed for a specific channel given the channel and helper role
+        Create the helpermessage embed for a specific channel given the channel and helper role.
         """
         # Create the embed that will be pinned in the message
         description = (

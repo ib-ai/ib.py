@@ -24,7 +24,7 @@ class Roles(commands.Cog):
         role_members = [
             member for member in ctx.guild.members if existing_role in member.roles
         ]
-        await ctx.send(f"Adding roles to {len[role_members]}")
+        await ctx.send(f"Adding roles to {len[role_members]} members.")
         for member in role_members:
             try:
                 await member.add_roles(new_role)
