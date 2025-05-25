@@ -115,7 +115,7 @@ class Helper(commands.Cog):
         """
         Pin a message to a channel.
         """
-        if message is None:
+        if message == None:
             return await ctx.send("No message has been provided to pin.")
         if await self.check_permissions(ctx):
             if message.pinned:
@@ -139,7 +139,7 @@ class Helper(commands.Cog):
         """
         Unpin a message from a channel.
         """
-        if message is None:
+        if message == None:
             await ctx.send("No message has been provided to unpin.")
         if await self.check_permissions(ctx):
             if not message.pinned:
