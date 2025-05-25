@@ -130,5 +130,4 @@ dmypy.json
 
 config.json
 config.toml
-bot/
 .pdm-python
