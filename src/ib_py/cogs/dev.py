@@ -7,8 +7,8 @@ from typing import Literal, Optional
 import discord
 from discord.ext import commands
 
-from ib_py.utils.checks import cogify, admin_command
-from ib_py.utils.commands import available_subcommands
+from ..utils.checks import cogify, admin_command
+from ..utils.commands import available_subcommands
 
 
 logger = logging.getLogger(__name__)

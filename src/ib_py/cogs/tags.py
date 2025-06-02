@@ -2,15 +2,15 @@ import re
 from typing import Optional
 import discord
 from discord.ext import commands
-from ib_py.db.cached import get_all_tags, get_guild_data
-from ib_py.db.models import StaffTag
+from ..db.cached import get_all_tags, get_guild_data
+from ..db.models import StaffTag
 
-from ib_py.utils.commands import available_subcommands
-from ib_py.utils.converters import RegexConverter
+from ..utils.commands import available_subcommands
+from ..utils.converters import RegexConverter
 
 import logging
 
-from ib_py.utils.pagination import (
+from ..utils.pagination import (
     NAME_SIZE_LIMIT,
     VALUE_SIZE_LIMIT,
     PaginationView,

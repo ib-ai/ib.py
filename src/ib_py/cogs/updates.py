@@ -3,13 +3,13 @@ from datetime import datetime, timedelta, timezone
 
 import discord
 from discord.ext import commands
-from ib_py.db.cached import get_guild_data
+from ..db.cached import get_guild_data
 
-from ib_py.db.models import GuildData
-from ib_py.utils.commands import available_subcommands
-from ib_py.utils.misc import ordinal
-from ib_py.utils.checks import admin_command, staff_command, cogify
-from ib_py.utils.converters import IndexConverter
+from ..db.models import GuildData
+from ..utils.commands import available_subcommands
+from ..utils.misc import ordinal
+from ..utils.checks import admin_command, staff_command, cogify
+from ..utils.converters import IndexConverter
 
 import logging
 

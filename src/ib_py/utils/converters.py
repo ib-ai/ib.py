@@ -4,7 +4,7 @@ from tortoise import timezone
 
 from discord.ext import commands
 
-from ib_py.utils.time import parse_time
+from ..utils.time import parse_time
 
 import logging
 

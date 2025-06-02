@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord.app_commands import describe
 
-from ib_py.utils.commands import available_subcommands
+from ..utils.commands import available_subcommands
 
 
 class Public(commands.Cog):
