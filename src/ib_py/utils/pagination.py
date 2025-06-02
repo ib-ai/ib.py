@@ -5,7 +5,7 @@ import discord
 from discord import ui
 from discord.ext import commands
 
-from utils.misc import truncate
+from ib_py.utils.misc import truncate
 
 
 NAME_SIZE_LIMIT = 256

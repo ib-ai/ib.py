@@ -5,13 +5,13 @@ from tortoise import timezone
 import discord
 from discord import app_commands
 from discord.ext import commands
-from db.models import MemberReminder
+from ib_py.db.models import MemberReminder
 
-from utils.commands import available_subcommands
-from utils.converters import DatetimeConverter
-from utils.time import DEGENERACY_DELAY, long_sleep_until
+from ib_py.utils.commands import available_subcommands
+from ib_py.utils.converters import DatetimeConverter
+from ..utils.time import DEGENERACY_DELAY, long_sleep_until
 from discord.utils import format_dt
-from utils.pagination import paginated_embed_menus, PaginationView
+from ib_py.utils.pagination import paginated_embed_menus, PaginationView
 
 import logging
 

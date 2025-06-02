@@ -1,5 +1,5 @@
 from discord.ext import commands
-from db.cached import get_guild_data
+from ib_py.db.cached import get_guild_data
 
 
 def cogify(check):
