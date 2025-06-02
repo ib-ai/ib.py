@@ -51,7 +51,7 @@ class IBpy(commands.Bot):
 
         for cog in INITIAL_COGS:
             try:
-                await self.load_extension(f"cogs.{cog}")
+                await self.load_extension(f"ib_py.cogs.{cog}")
                 logger.debug(f'Imported cog "{cog}".')
             except commands.errors.NoEntryPointError as e:
                 # ! Remove before push

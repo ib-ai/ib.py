@@ -1,14 +1,14 @@
 import re
 import discord
 from discord.ext import commands
-from db.cached import get_all_filters, get_guild_data
-from db.models import GuildData, StaffFilter
-from utils.checks import cogify, staff_command
+from ..db.cached import get_all_filters, get_guild_data
+from ..db.models import GuildData, StaffFilter
+from ..utils.checks import cogify, staff_command
 
-from utils.commands import available_subcommands
-from utils.converters import RegexConverter
-from utils.misc import truncate
-from utils.pagination import PaginationView, paginated_embed_menus
+from ..utils.commands import available_subcommands
+from ..utils.converters import RegexConverter
+from ..utils.misc import truncate
+from ..utils.pagination import PaginationView, paginated_embed_menus
 
 import logging
 
