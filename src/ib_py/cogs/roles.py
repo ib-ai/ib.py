@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from utils.checks import cogify, admin_command
+from ..utils.checks import cogify, admin_command
 import logging
 
 logger = logging.getLogger(__name__)

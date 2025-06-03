@@ -2,18 +2,18 @@ import re
 from typing import Literal, Optional
 import discord
 from discord.ext import commands
-from db.cached import get_all_monitor_messages, get_all_monitor_users, get_guild_data
-from db.models import (
+from ..db.cached import get_all_monitor_messages, get_all_monitor_users, get_guild_data
+from ..db.models import (
     GuildData,
     StaffMonitorMessage,
     StaffMonitorUser,
     StaffMonitorMessageGroups,
 )
 
-from utils.checks import admin_command, cogify, staff_command
-from utils.commands import available_subcommands
-from utils.converters import ListConverter, RegexConverter
-from utils.pagination import paginated_embed_menus, PaginationView
+from ..utils.checks import admin_command, cogify, staff_command
+from ..utils.commands import available_subcommands
+from ..utils.converters import ListConverter, RegexConverter
+from ..utils.pagination import paginated_embed_menus, PaginationView
 
 import logging
 

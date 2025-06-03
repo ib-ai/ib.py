@@ -10,7 +10,7 @@ TORTOISE_ORM = {
     },
     "apps": {
         "models": {
-            "models": ["db.models", "aerich.models"],
+            "models": ["ib_py.db.models", "aerich.models"],
             "default_connection": "default",
         },
     },
