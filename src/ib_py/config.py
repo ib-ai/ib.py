@@ -14,32 +14,16 @@ class IBPyConfig:
     db_password: str
 
     @classmethod
-    def from_venv(cls):
-        token = os.getenv("TOKEN")
-        prefix = os.getenv("PREFIX")
-        description = os.getenv("DESCRIPTION")
-        application_id = os.getenv("APPLICATION_ID")
-        db_host = os.getenv("DB_HOST")
-        db_user = os.getenv("DB_USER")
-        db_name = os.getenv("DB_NAME")
-        db_password = os.getenv("DB_PASSWORD")
-
-        if not all(
-            (
-                token,
-                prefix,
-                description,
-                application_id,
-                db_host,
-                db_user,
-                db_name,
-                db_password,
-            )
-        ):
-            raise ValueError(
-                "One or more configuration values are missing. "
-                "Please provide them via environment variables or a config.toml file."
-            )
+    def from_env(cls):
+        import os
+        token = os.environ["TOKEN"]
+        prefix = os.environ["PREFIX"]
+        description = os.environ["DESCRIPTION"]
+        application_id = os.environ["APPLICATION_ID"]
+        db_host = os.environ["DB_HOST"]
+        db_user = os.environ["DB_USER"]
+        db_name = os.environ["DB_NAME"]
+        db_password = os.environ["DB_PASSWORD"]
 
         return cls(
             token=token,
@@ -54,4 +38,4 @@ class IBPyConfig:
 
 
 def get_config() -> IBPyConfig:
-    return IBPyConfig.from_venv()
+    return IBPyConfig.from_env()

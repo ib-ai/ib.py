@@ -8,7 +8,7 @@ from typing import Union
 class Helper(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-        self.subjects = toml.load(os.getenv("CONFIG_PATH"))["subjects"]
+        self.subjects = toml.load(os.environ["CONFIG_PATH"])["subjects"]
         self.subject_channels = self.subjects.keys()
         # Ensure that each entry in self.subjects is a list of roles, even if it contains just one role
         self.helper_ids = [self.subjects[channel] for channel in self.subject_channels]
