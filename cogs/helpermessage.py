@@ -11,7 +11,7 @@ from typing import AsyncGenerator, Set, Tuple
 class Helpermessage(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-        self.data = toml.load(os.getenv("CONFIG_PATH"))
+        self.data = toml.load(os.environ["CONFIG_PATH"])
         self.subjects = self.data["subjects"]
         self.description = self.data["helper_description"]
         self.helper_roles = [self.subjects[channel] for channel in self.subjects.keys()]
