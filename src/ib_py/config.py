@@ -15,7 +15,6 @@ class IBPyConfig:
 
     @classmethod
     def from_env(cls):
-        import os
         token = os.environ["TOKEN"]
         prefix = os.environ["PREFIX"]
         description = os.environ["DESCRIPTION"]
