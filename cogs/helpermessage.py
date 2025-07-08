@@ -1,18 +1,19 @@
+import os
 import discord
 import toml
 from discord.ext import commands
-from utils.commands import available_subcommands
-from utils.pagination import paginated_embed_menus, PaginationView
-from db.models import HelperMessage
+from ..utils.commands import available_subcommands
+from ..utils.pagination import paginated_embed_menus, PaginationView
+from ..db.models import HelperMessage
 from typing import AsyncGenerator, Set, Tuple
 
 
 class Helpermessage(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-        self.data = toml.load("config.toml")
+        self.data = toml.load(os.getenv("CONFIG_PATH"))
         self.subjects = self.data["subjects"]
-        self.description = self.data["description"]
+        self.description = self.data["helper_description"]
         self.helper_roles = [self.subjects[channel] for channel in self.subjects.keys()]
 
     @commands.hybrid_group()
