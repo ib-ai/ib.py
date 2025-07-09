@@ -108,7 +108,7 @@ class Dev(commands.Cog):
 
         await ctx.send(f"Synced the tree to {ret}/{len(guilds)}.")
 
-    @commands.group(aliases=['ext'])
+    @commands.group(aliases=["ext"])
     async def extensions(self, ctx: commands.Context):
         """
         Utilities for managing loaded extensions.

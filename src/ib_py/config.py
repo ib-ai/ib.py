@@ -1,6 +1,4 @@
-import tomllib
 import os
-from pathlib import Path
 from dataclasses import dataclass
 
 
@@ -16,38 +14,27 @@ class IBPyConfig:
     db_password: str
 
     @classmethod
-    def from_toml(cls, path: Path):
-        with path.open('rb') as f:
-            contents = tomllib.load(f)
-        
-        token = os.getenv("TOKEN") if "TOKEN" in os.environ else contents["token"]
-        prefix = os.getenv("PREFIX") if "PREFIX" in os.environ else contents["prefix"]
-        description = (
-            os.getenv("DESCRIPTION") if "DESCRIPTION" in os.environ else contents["description"]
-        )
-        application_id = (
-            os.getenv("APPLICATION_ID")
-            if "APPLICATION_ID" in os.environ
-            else contents["application_id"]
-        )
-        db_host = os.getenv("DB_HOST") if "DB_HOST" in os.environ else contents["db_host"]
-        db_user = os.getenv("DB_USER") if "DB_USER" in os.environ else contents["db_user"]
-        db_name = os.getenv("DB_NAME") if "DB_NAME" in os.environ else contents["db_name"]
-        db_password = (
-            os.getenv("DB_PASSWORD") if "DB_PASSWORD" in os.environ else contents["db_password"]
-        )
+    def from_env(cls):
+        token = os.environ["TOKEN"]
+        prefix = os.environ["PREFIX"]
+        description = os.environ["DESCRIPTION"]
+        application_id = os.environ["APPLICATION_ID"]
+        db_host = os.environ["DB_HOST"]
+        db_user = os.environ["DB_USER"]
+        db_name = os.environ["DB_NAME"]
+        db_password = os.environ["DB_PASSWORD"]
+
         return cls(
-            token,
-            prefix,
-            description,
-            application_id,
-            db_host,
-            db_user,
-            db_name,
-            db_password
+            token=token,
+            prefix=prefix,
+            description=description,
+            application_id=int(application_id),
+            db_host=db_host,
+            db_user=db_user,
+            db_name=db_name,
+            db_password=db_password,
         )
 
 
-# NOTE: hardcoded location, change later
-path = Path(__file__).parent / "../../config.toml"
-config = IBPyConfig.from_toml(path)
+def get_config() -> IBPyConfig:
+    return IBPyConfig.from_env()
