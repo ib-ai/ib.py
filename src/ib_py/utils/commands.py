@@ -17,4 +17,4 @@ async def available_subcommands(ctx: commands.Context):
                 f'Command "{cmd.name}" check threw error, discarded in {ctx.command.name} group subcommand list.',
                 exc_info=True,
             )
-    await ctx.send(f"Available subcommands: {', '.join(subcmds)}.")
+    await ctx.send(f'Available subcommands: {", ".join(subcmds)}.')

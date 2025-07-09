@@ -207,7 +207,7 @@ class HelperMessage(Model):
     helper_message_id = fields.IntField(pk=True)
     channel_id = fields.BigIntField()
     message_id = fields.BigIntField()
-    role_id = ArrayField(element_type="bigint")
+    role_id = fields.BigIntField()
 
 
 # Member Tables

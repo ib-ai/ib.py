@@ -1,8 +1,6 @@
 from tortoise import Tortoise
 import logging
-from ..config import get_config
-
-config = get_config()
+from ..config import config
 
 logger = logging.getLogger()
 

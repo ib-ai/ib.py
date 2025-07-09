@@ -2,40 +2,40 @@
 name = "ib.py"
 version = "0.1.0"
 description = "Discord bot for International Baccalaureate Discord server."
-dependencies = ["discord-py>=2.3.2", "async-lru>=2.0.4", "toml>=0.10.2", "aerich>=0.7.2", "tortoise-orm[asyncpg]>=0.20.1"]
+authors = [
+    {name = "ib-ai", email = ""},
+]
+dependencies = [
+    "discord-py>=2.3.2",
+    "async-lru>=2.0.4",
+    "toml>=0.10.2",
+    "aerich>=0.7.2",
+    "tortoise-orm[asyncpg]>=0.20.1",
+]
 requires-python = ">=3.11,<3.13"
 readme = "README.md"
-
-[[project.authors]]
-name = "ib-ai"
-email = ""
-
-[project.license]
-text = "GPL-3.0-only"
+license = {text = "GPL-3.0-only"}
 
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
 [dependency-groups]
-test = ["pytest>=8.3.5", "pytest-asyncio>=0.26.0"]
-lint = ["ruff>=0.11.9"]
+test = [
+    "pytest>=8.3.5",
+    "pytest-asyncio>=0.26.0",
+]
+lint = [
+    "ruff>=0.11.9",
+]
 
 [tool.pdm]
 distribution = true
 
-[tool.pdm.scripts.migrate]
-cmd = "aerich migrate"
-env_file = "src/.env"
-
-[tool.pdm.scripts.upgrade]
-cmd = "aerich upgrade"
-env_file = "src/.env"
-
 [tool.aerich]
-tortoise_orm = "src.ib_py.db.db.TORTOISE_ORM"
-location = "./migrations"
-src_folder = "./."
+tortoise_orm = "ib_py.db.db.TORTOISE_ORM"
+location = "migrations"
+src_folder = "src/ib_py"
 
 [tool.ruff]
 line-length = 95

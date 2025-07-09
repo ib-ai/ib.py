@@ -130,11 +130,11 @@ class Public(commands.Cog):
         )
         embed.add_field(name="**Nickname**", value=f"{member.display_name}", inline=False)
         embed.add_field(
-            name="**Server join date**", value=f"{member.joined_at.strftime('%c')}"
+            name="**Server join date**", value=f'{member.joined_at.strftime("%c")}'
         )
         embed.add_field(
             name="**Account creation date**",
-            value=f"{member.created_at.strftime('%c')}",
+            value=f'{member.created_at.strftime("%c")}',
             inline=False,
         )
         embed.add_field(name="**Discord ID**", value=f"{member.id}")
@@ -148,7 +148,7 @@ class Public(commands.Cog):
         if member.premium_since:
             embed.add_field(
                 name="**Nitro boosting since**",
-                value=f"{member.premium_since.strftime('%c')}",
+                value=f'{member.premium_since.strftime("%c")}',
                 inline=False,
             )
         embed.set_thumbnail(url=member.display_avatar.url)
