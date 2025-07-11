@@ -87,6 +87,4 @@ class IBpy(commands.Bot):
 
 
 bot = IBpy()
-
-if __name__ == "__main__":
-    bot.run(config.token)
+bot.run(config.token)
