@@ -129,7 +129,6 @@ class TestTagsCog(unittest.IsolatedAsyncioTestCase):
         # When PaginationView(...) is called, return the mock instance
         mock_pagination_view.return_value = pagination_instance
 
-        ctx = MagicMock()
         # Call your method
         await self.cog.tag_list(self, self.ctx)
 

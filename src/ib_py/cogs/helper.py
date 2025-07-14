@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 import toml
 import os
-from typing import Union
 
 
 class Helper(commands.Cog):
@@ -12,7 +11,6 @@ class Helper(commands.Cog):
         self.subject_channels = self.subjects.keys()
         # Ensure that each entry in self.subjects is a list of roles, even if it contains just one role
         self.helper_ids = [self.subjects[channel] for channel in self.subject_channels]
->>>>>>> 80d8d4c (test commit):cogs/helper.py
         self.ctx_menu = discord.app_commands.ContextMenu(
             name="Toggle Pin",
             callback=self.toggle_pin,
@@ -30,7 +28,6 @@ class Helper(commands.Cog):
 
     async def check_permissions(self, obj):
         user = obj.author if isinstance(obj, commands.Context) else obj.user
-<<<<<<< HEAD:src/ib_py/cogs/helper.py
         channel = obj.channel.id
         user_role_ids = [str(role.id) for role in user.roles]
         if not any(role in self.helper_ids for role in user_role_ids):
@@ -38,17 +35,6 @@ class Helper(commands.Cog):
             await self.send_error(obj, message)
             return False
         if channel not in self.subject_channels:
-=======
-        channel_id = obj.channel.id
-        user_role_ids = [role.id for role in user.roles]
-        flat_helper_ids = [role for sublist in self.helper_ids for role in sublist]
-        if not any(role in flat_helper_ids for role in user_role_ids):
-            message = "Only subject helpers can pin messages."
-            await self.send_error(obj, message)
-            return False
-        channel_list = [int(channel) for channel in list(self.subject_channels)]
-        if channel_id not in channel_list:
->>>>>>> 80d8d4c (test commit):cogs/helper.py
             message = "You may only pin messages in subject channels."
             await self.send_error(obj, message)
             return False
