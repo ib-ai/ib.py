@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import toml
 import os
+from typing import Union
 
 
 class Helper(commands.Cog):
