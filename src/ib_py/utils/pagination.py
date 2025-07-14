@@ -86,7 +86,7 @@ def paginated_embed_menus(
         items += 1
     embeds.append(current)
     for page, embed in enumerate(embeds):
-        embed.set_footer(text=f"Page {page+1}/{pages}")
+        embed.set_footer(text=f"Page {page + 1}/{pages}")
 
     return embeds
 
