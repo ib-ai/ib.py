@@ -24,6 +24,7 @@ class Roles(commands.Cog):
         role_members = [
             member for member in ctx.guild.members if existing_role in member.roles
         ]
+        await ctx.send(f"Adding roles to {len[role_members]} members.")
         for member in role_members:
             try:
                 await member.add_roles(new_role)
@@ -33,10 +34,10 @@ class Roles(commands.Cog):
                 logger.info(f"Could not add role to {member.name}.")
                 failure_count += 1
         await ctx.send(
-            f"Successfully added roles to {len(role_members) - failure_count} members."
+            f"Successfully added roles to {len(role_members) - failure_count} members with a failure count of {failure_count}."
         )
         logger.info(
-            f"Given {new_role.name} role to {len(role_members) - failure_count} members."
+            f"Given {new_role.name} role to {len(role_members) - failure_count} members with a failure count of {failure_count}."
         )
 
 
