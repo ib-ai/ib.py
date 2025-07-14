@@ -18,7 +18,9 @@ requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
 [dependency-groups]
-test = ["pytest>=8.3.5", "pytest-asyncio>=0.26.0"]
+test = [
+    "pytest>=8.3.5",
+]
 lint = ["ruff>=0.11.9"]
 
 [tool.pdm]
