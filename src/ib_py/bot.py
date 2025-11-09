@@ -2,7 +2,8 @@ import discord
 from discord.ext import commands
 
 from .db.db import db_init
-from .config import config
+from .config import get_config
+config = get_config()
 
 
 import logging
