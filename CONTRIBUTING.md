@@ -64,6 +64,6 @@ Once the bot is up and running, you are ready to start developing!
 Before you push changes, ensure that your code aligns with the codestyle for this project. To run [ruff](https://docs.astral.sh/ruff/) or [isort](https://pycqa.github.io/isort/index.html), use the following commands:
 
 ```
-uv run ruff check src
-uv run isort src
+uv run ruff check .
+uv run isort .
 ```
