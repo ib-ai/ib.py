@@ -31,7 +31,6 @@ dev = [
     "ruff>=0.14.4",
 ]
 
-
 [tool.aerich]
 tortoise_orm = "src.ib_py.db.db.TORTOISE_ORM"
 location = "./migrations"
