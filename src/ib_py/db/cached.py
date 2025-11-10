@@ -1,11 +1,7 @@
 from async_lru import alru_cache
-from .models import (
-    GuildData,
-    StaffFilter,
-    StaffMonitorMessage,
-    StaffMonitorUser,
-    StaffTag,
-)
+
+from .models import (GuildData, StaffFilter, StaffMonitorMessage,
+                     StaffMonitorUser, StaffTag)
 
 
 def model_cache_factory(Model):

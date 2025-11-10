@@ -1,7 +1,9 @@
+import logging
+
 import discord
 from discord.ext import commands
-from ..utils.checks import cogify, admin_command
-import logging
+
+from ..utils.checks import admin_command, cogify
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  # TODO: change back to logging.info

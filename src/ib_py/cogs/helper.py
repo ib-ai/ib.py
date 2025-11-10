@@ -1,8 +1,9 @@
-import discord
-from discord.ext import commands
-import toml
 import os
 from typing import Union
+
+import discord
+import toml
+from discord.ext import commands
 
 
 class Helper(commands.Cog):

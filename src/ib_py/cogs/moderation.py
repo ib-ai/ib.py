@@ -1,8 +1,8 @@
 from typing import Union
 
 import discord
-from discord.ext import commands
 from discord.app_commands import describe
+from discord.ext import commands
 
 from ..utils.commands import available_subcommands
 

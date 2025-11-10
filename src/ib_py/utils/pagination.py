@@ -1,12 +1,11 @@
-from typing import Union, Optional
 from collections.abc import Collection
+from typing import Optional, Union
 
 import discord
 from discord import ui
 from discord.ext import commands
 
 from ..utils.misc import truncate
-
 
 NAME_SIZE_LIMIT = 256
 VALUE_SIZE_LIMIT = 1024
