@@ -1,25 +1,19 @@
+import logging
+
 import discord
 from discord.ext import commands
 
 from .db.db import db_init
-from .config import get_config
-config = get_config()
+from .config import IBPyConfig
 
+# setup config
+config = IBPyConfig()
+config.requires("prefix", "description", "application_id")
 
-import logging
+# setup logger
+logger = logging.getLogger(__name__)
 
-logger = logging.getLogger("bot")
-logger.setLevel(logging.DEBUG)  # TODO: Change back to logging.INFO
-
-cogs_logger = logging.getLogger("cogs")
-cogs_logger.setLevel(logging.DEBUG)  # TODO: Change back to logging.INFO
-
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%d-%b-%y %H:%M:%S",
-)
-
-
+# setup bot
 intents = discord.Intents.all()
 INITIAL_COGS = (
     "dev",
@@ -85,7 +79,3 @@ class IBpy(commands.Bot):
         # uesful for debugging, TODO: remove/edit before pushing to production
         await super().on_command_error(ctx, exception)
         await ctx.send(exception)
-
-
-bot = IBpy()
-bot.run(config.token)

@@ -1,10 +1,15 @@
-from tortoise import Tortoise
 import logging
-from ..config import get_config
 
-config = get_config()
+from tortoise import Tortoise
 
-logger = logging.getLogger()
+from ..config import IBPyConfig
+
+# setup config
+config = IBPyConfig()
+config.requires("db_host", "db_name", "db_user", "db_password")
+
+# setup logger
+logger = logging.getLogger(__name__)
 
 TORTOISE_ORM = {
     "connections": {
@@ -28,3 +33,4 @@ async def db_init():
 
     # Generate the tables
     await Tortoise.generate_schemas()
+    logger.info("Database schemas generated.")
