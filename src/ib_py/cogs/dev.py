@@ -1,15 +1,14 @@
+import contextlib
 import io
 import logging
 import textwrap
-import contextlib
 from typing import Literal, Optional
 
 import discord
 from discord.ext import commands
 
-from ..utils.checks import cogify, admin_command
+from ..utils.checks import admin_command, cogify
 from ..utils.commands import available_subcommands
-
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,8 @@
-from tortoise.models import Model
-from tortoise.contrib.postgres.fields import ArrayField
-from tortoise import fields
 import enum
+
+from tortoise import fields
+from tortoise.contrib.postgres.fields import ArrayField
+from tortoise.models import Model
 
 # Enums
 
