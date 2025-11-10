@@ -16,7 +16,7 @@ class IBPyConfig:
 
     def __new__(cls, **kwargs):
         """"
-        Implement singleton-inspired pattern to ensure only one instance exists for each env/toml file pair.
+        Implements singleton-inspired pattern to ensure only one instance exists for each env/toml file pair.
         """
         env_file = kwargs.get("env_file", pathlib.Path(".env"))
         toml_file = kwargs.get("toml_file", pathlib.Path("config.toml"))
