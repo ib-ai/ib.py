@@ -1,3 +1,11 @@
+# sensitive info - better to define using .env
+token=""
+db_host=""
+db_user=""
+db_name=""
+db_password=""
+
+# config data
 prefix=""
 description=""
 application_id=0
