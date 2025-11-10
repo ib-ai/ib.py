@@ -1,8 +1,11 @@
 import unittest
-import discord
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import discord
 from discord.ext import commands
+
 from ib_py.cogs.tags import Tags
+
 
 class TestTagsCog(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
