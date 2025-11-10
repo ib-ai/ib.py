@@ -3,8 +3,8 @@ import logging
 import discord
 from discord.ext import commands
 
-from .db.db import db_init
 from .config import IBPyConfig
+from .db.db import db_init
 
 # setup config
 config = IBPyConfig()

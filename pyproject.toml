@@ -25,12 +25,12 @@ requires = ["uv_build>=0.8.22,<0.9.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
-lint = [
+dev = [
+    "isort>=7.0.0",
+    "pytest>=9.0.0",
     "ruff>=0.14.4",
 ]
-test = [
-    "pytest>=9.0.0",
-]
+
 
 [tool.aerich]
 tortoise_orm = "src.ib_py.db.db.TORTOISE_ORM"

@@ -1,1 +1,1 @@
-from .config import IBPyConfig
+from .config import IBPyConfig as IBPyConfig
