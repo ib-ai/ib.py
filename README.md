@@ -11,7 +11,7 @@ This bot is incomplete.
 
 To run the bot, you must have [Docker](https://docs.docker.com/get-docker/) and [Python >=3.11](https://www.python.org/downloads/) installed.
 
-1. Close this repository.
+1. Clone this repository.
 
 ```
 git clone https://github.com/ib-ai/ib.py.git
