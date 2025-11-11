@@ -69,6 +69,7 @@ class Reminder(commands.Cog):
                     logger.debug("Reminder already active. (skipping)")
                     continue
                 user = self.bot.get_user(reminder.user_id) or await self.bot.fetch_user(reminder.user_id)
+                user = self.bot.get_user(reminder.user_id) or await self.bot.fetch_user(reminder.user_id)
                 if not user:
                     logger.warning(f"User {reminder.user_id} not found. (skipping)")
                     continue
