@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 # setup bot
 intents = discord.Intents.all()
 INITIAL_COGS = (
+    "channelorder",
     "dev",
     "embeds",
     "filter",

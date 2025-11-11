@@ -8,5 +8,5 @@ db_password=""
 # config data
 prefix=""
 description=""
-application_id=0
+application_id=
 log_level=""

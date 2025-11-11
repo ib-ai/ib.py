@@ -17,6 +17,7 @@ class PunishmentType(str, enum.Enum):
 class ChannelType(str, enum.Enum):
     TEXT = "text"
     VOICE = "voice"
+    FORUM = "forum"
 
 
 # Guild Tables
@@ -51,7 +52,7 @@ class GuildSnapshot(Model):
     snapshot_id = fields.IntField(pk=True)
     category_id = fields.BigIntField()
     channel_type = fields.CharEnumField(ChannelType)
-    channel_list = ArrayField()
+    channel_list = ArrayField(element_type="bigint", null=True, default=list)
 
 
 class GuildCassowary(Model):
