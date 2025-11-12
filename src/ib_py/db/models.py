@@ -13,15 +13,7 @@ class PunishmentType(str, enum.Enum):
     BAN = "ban"
     UNKNOWN = "unknown"
 
-
-class ChannelType(str, enum.Enum):
-    TEXT = "text"
-    VOICE = "voice"
-    FORUM = "forum"
-
-
 # Guild Tables
-
 
 class GuildData(Model):
     class Meta:
@@ -51,7 +43,6 @@ class GuildSnapshot(Model):
 
     snapshot_id = fields.IntField(pk=True)
     category_id = fields.BigIntField()
-    channel_type = fields.CharEnumField(ChannelType)
     channel_list = ArrayField(element_type="bigint", null=True, default=list)
 
 
