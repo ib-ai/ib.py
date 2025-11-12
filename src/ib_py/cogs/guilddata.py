@@ -15,10 +15,77 @@ config.requires("prefix")
 
 logger = logging.getLogger(__name__)
 
-mention_styles = {
+MENTION_STYLES = {
     'TextChannel': '#',
     'Role': '@&',
 }
+
+GUILD_CONFIGURATION_DATA = {
+    'modlog': {
+        'datatype': 'TextChannel',
+        'dataname': 'modlog_id',
+        'desc': 'Set a public moderation log channel.'
+    },
+    'staffmodlog': {
+        'datatype': 'TextChannel',
+        'dataname': 'modlog_staff_id',
+        'desc': 'Set a staff moderation log channel.'
+    },
+    'updates': {
+        'datatype': 'TextChannel',
+        'dataname': 'updates_id',
+        'desc': 'Set an updates channel.'
+    },
+    'logs': {
+        'datatype': 'TextChannel',
+        'dataname': 'logs_id',
+        'desc': 'Set a logs channel.'
+    },
+    'mute': {
+        'datatype': 'Role',
+        'dataname': 'mute_id',
+        'desc': 'Set a mute role.'
+    },
+    'moderator': {
+        'datatype': 'Role',
+        'dataname': 'moderator_id',
+        'desc': 'Set a moderator role.'
+    },
+    'helper': {
+        'datatype': 'Role',
+        'dataname': 'helper_id',
+        'desc': 'Set a helper role.'
+    },
+    'messagemonitor': {
+        'datatype': 'TextChannel',
+        'dataname': 'monitor_user_log_id',
+        'desc': 'Set a message monitoring log channel.'
+    },
+    'usermonitor': {
+        'datatype': 'TextChannel',
+        'dataname': 'monitor_message_log_id',
+        'desc': 'Set a user monitoring log channel.'
+    },
+}
+GUILD_CONFIGURATION_TOGGLES = {
+    'filtering': {
+        'datanames': ['filtering'],
+        'desc': 'Toggle filtering.'
+    },
+    'usermonitor': {
+        'datanames': ['monitoring_user'],
+        'desc': 'Toggle user monitoring.'
+    },
+    'messagemonitor': {
+        'datanames': ['monitoring_message'],
+        'desc': 'Toggle message monitoring.'
+    },
+    'monitor': {
+        'datanames': ['monitoring_user', 'monitoring_message'],
+        'desc': 'Toggle monitoring.'
+    },
+}
+
 
 class SetGuildData(commands.Cog, name='Guild Settings'):
     def __init__(self, bot: commands.Bot) -> None:
@@ -40,9 +107,42 @@ class SetGuildData(commands.Cog, name='Guild Settings'):
         return config.prefix
 
 
+    @commands.command()
+    async def guilddata(self, ctx: commands.Context):
+        """
+        View this guild's data.
+        """
+        guild_data = await get_guild_data(ctx.guild.id)
+        if not guild_data:
+            await ctx.send("No guild data set for this guild.")
+            return
+
+        data = []
+        for name, field in GUILD_CONFIGURATION_DATA.items():
+            value = getattr(guild_data, field['dataname'])
+            output = f"**{name}**: " + (f"<{MENTION_STYLES[field['datatype']]}{value}> (ID: {value})" if value else "Not set.")
+            data.append(output)
+
+        toggles = {}
+        for field in GUILD_CONFIGURATION_TOGGLES.values():
+            for name in field['datanames']:
+                if name in toggles:
+                    continue
+                output = f"**{name}**: {'enabled' if getattr(guild_data, name) else 'disabled'}"
+                toggles[name] = output
+
+        embed = discord.Embed(
+            title=f"Guild Data for {ctx.guild.name} (ID: {ctx.guild.id})",
+            color=discord.Color.dark_gray(),
+        )
+        embed.add_field(name="Configured Data", value="\n".join(data), inline=False)
+        embed.add_field(name="Toggles", value="\n".join(toggles.values()), inline=False)
+        await ctx.send(embed=embed)
+
+
     @staticmethod
     def guild_data_set_factory(datatype: str, dataname: str, *, desc: Optional[str] = None):
-        style = mention_styles[datatype]
+        style = MENTION_STYLES[datatype]
         discord_type = getattr(discord, datatype)
         async def cmd(ctx: commands.Context, thing: Optional[discord_type] = None):
             f"""
@@ -67,33 +167,9 @@ class SetGuildData(commands.Cog, name='Guild Settings'):
         Commands for setting guild data.
         """
         await available_subcommands(ctx)
-    set.command(name='modlog')(guild_data_set_factory('TextChannel', 'modlog_id',
-        desc='Set a public moderation log channel.'
-    ))
-    set.command(name='staffmodlog')(guild_data_set_factory('TextChannel', 'modlog_staff_id',
-        desc='Set a staff moderation log channel.'
-    ))
-    set.command(name='updates')(guild_data_set_factory('TextChannel', 'updates_id',
-        desc='Set an updates channel.'
-    ))
-    set.command(name='logs')(guild_data_set_factory('TextChannel', 'logs_id',
-        desc='Set a logs channel.'
-    ))
-    set.command(name='mute')(guild_data_set_factory('Role', 'mute_id',
-        desc='Set a mute role.'
-    ))
-    set.command(name='moderator')(guild_data_set_factory('Role', 'moderator_id',
-        desc='Set a moderator role.'
-    ))
-    set.command(name='helper')(guild_data_set_factory('Role', 'helper_id',
-        desc='Set a helper role.'
-    ))
-    set.command(name='messagemonitor')(guild_data_set_factory('TextChannel', 'monitor_user_log_id',
-        desc='Set a message monitoring log channel.'
-    ))
-    set.command(name='usermonitor')(guild_data_set_factory('TextChannel', 'monitor_message_log_id',
-        desc='Set a user monitoring log channel.'
-    ))
+
+    for name, kwargs in GUILD_CONFIGURATION_DATA.items():
+        set.command(name=name)(guild_data_set_factory(**kwargs))
 
     @set.command()
     async def prefix(self, ctx, prefix):
@@ -127,40 +203,12 @@ class SetGuildData(commands.Cog, name='Guild Settings'):
         Commands for toggling guild data.
         """
         await available_subcommands(ctx)
-    toggle.command(name='filtering')(guild_data_toggle_factory('filtering',
-        desc='Toggle filtering.'
-    ))
-    toggle.command(name='usermonitor')(guild_data_toggle_factory('monitoring_user',
-        desc='Toggle user monitoring.'
-    ))
-    toggle.command(name='messagemonitor')(guild_data_toggle_factory('monitoring_message',
-        desc='Toggle message monitoring.'
-    ))
-    toggle.command(name='monitor')(guild_data_toggle_factory('monitoring_user', 'monitoring_message',
-        desc='Toggle monitoring.'
-    ))
 
-    @commands.command()
-    async def guilddata(self, ctx: commands.Context):
-        """
-        View this guild's data.
-        """
-        guild_data = await get_guild_data(ctx.guild.id)
-        if not guild_data:
-            await ctx.send("No guild data set for this guild.")
-            return
-
-        field_names = [field["name"] for field in GuildData.describe()["data_fields"]]
-        max_len = max(len(name) for name in field_names)
-        description = "\n".join(
-            f"{key:>{max_len}} = {getattr(guild_data, key)}" for key in field_names
-        )
-        embed = discord.Embed(
-            title=f"Guild Data for {ctx.guild.name} (ID: {ctx.guild.id})",
-            color=discord.Color.dark_gray(),
-            description="```" + description + "```"
-        )
-        await ctx.send(embed=embed)
+    for name, kwargs in GUILD_CONFIGURATION_TOGGLES.items():
+        toggle.command(name=name)(guild_data_toggle_factory(
+            *kwargs['datanames'],
+            desc=kwargs['desc']
+        ))
 
 
 async def setup(bot: commands.Bot):
