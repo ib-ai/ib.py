@@ -165,7 +165,7 @@ class ChannelOrder(commands.Cog):
                 await ctx.reply(f"Failed to reorder {ch.name}: {e}", ephemeral=True)
                 return
 
-        await ctx.reply(f"Category `{category.name}` channels have been reordered to match the snapshot.", ephemeral=True)
+        await ctx.reply(f"`{category.name}` channels have been reordered to match the snapshot.", ephemeral=True)
 
 
 
