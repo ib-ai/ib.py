@@ -18,8 +18,8 @@ def ext_converter(argument: str):
     A converter for an extension name.
     """
     argument = argument.strip()
-    if not argument.startswith("cogs."):
-        argument = f"cogs.{argument}"
+    if not argument.startswith("ib_py.cogs."):
+        argument = f"ib_py.cogs.{argument}"
     return argument
 
 
@@ -28,13 +28,6 @@ class Dev(commands.Cog):
         self.bot = bot
 
     cog_check = cogify(admin_command())
-
-    @commands.command()
-    async def guilddata(self, ctx: commands.Context):
-        """
-        Display all guild data.
-        """
-        raise NotImplementedError("Command requires implementation and permission set-up.")
 
     @commands.command(name="eval")
     async def evaluate(self, ctx: commands.Context, *, code: str):

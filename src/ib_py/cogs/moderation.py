@@ -1,20 +1,20 @@
 import asyncio
-from typing import Union, Optional
+import logging
 from collections.abc import Callable, Mapping
+from typing import Optional
 
 import discord
 from discord.app_commands import describe
-
+from discord.ext import commands
+from discord.utils import format_dt
 from tortoise import timezone
-from tortoise.functions import Max
-from db.models import PunishmentType, StaffPunishment, StaffNote
-from db.cached import get_guild_data
 
-from utils.commands import available_subcommands
-from utils.converters import DatetimeConverter
-from utils.time import long_sleep_until, format_timestamp
+from ..db.cached import get_guild_data
+from ..db.models import PunishmentType, StaffNote, StaffPunishment
+from ..utils.commands import available_subcommands
+from ..utils.converters import DatetimeConverter
+from ..utils.time import long_sleep_until
 
-import logging
 logger = logging.getLogger(__name__)
 
 UNKNOWN = "???"
@@ -70,7 +70,7 @@ class Moderation(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.active = {}
-    
+
     async def handle_punishment_expiration(self, punishment: StaffPunishment):
         await long_sleep_until(punishment.expiry)
 
@@ -81,7 +81,7 @@ class Moderation(commands.Cog):
             await guild.unban(user, reason=f'Punishment case no. {punishment.punishment_id} expired.')
         elif punishment_type == PunishmentType.MUTE:
             pass  # leaving this for now
-    
+
     def removal_callback(self, id: int):
         def callback(task: asyncio.Task):
             del self.active[id]
@@ -92,8 +92,8 @@ class Moderation(commands.Cog):
         if not punishments:
             logger.debug('No existing punishments with expirations in the future.')
             return
-        
-        async with asyncio.TaskGroup() as tg:
+
+        async with asyncio.TaskGroup():
             for punishment in punishments:
                 if punishment.punishment_id in self.active:
                     logger.debug('Punishment expiration already scheduled. (skipping)')
@@ -110,7 +110,7 @@ class Moderation(commands.Cog):
                 logger.debug(f'Punishment expiration scheduled: id={punishment.punishment_id}')
             logger.debug(f'Total punishment expirations scheduled: {len(self.active)}')
 
-    
+
     async def publish_punishment_log(self, punishment_type: PunishmentType, entry: discord.AuditLogEntry):
         guild_data = await get_guild_data(guild_id=entry.guild.id)
         if not guild_data:
@@ -151,7 +151,7 @@ class Moderation(commands.Cog):
             message = await channel.send(log_message)
             punishment.message_id = message.id
             await punishment.save()
-    
+
     async def publish_revocation_log(self, punishment_type: PunishmentType, entry: discord.AuditLogEntry):
         guild_data = await get_guild_data(guild_id=entry.guild.id)
         if not guild_data:
@@ -168,7 +168,7 @@ class Moderation(commands.Cog):
                         + f'**Pardoned: **<@{pardoned.id}> (User: {pardoned.name}#{pardoned.discriminator}, ID: {pardoned.id})\n' \
                         + f'**Moderator: **{entry.user.name}#{entry.user.discriminator} (ID: {entry.user.id})'
             channel = self.bot.get_channel(public_log)
-            message = await channel.send(log_message)
+            await channel.send(log_message)
 
     @staticmethod
     def parse_reason_redact(reason: str):
@@ -216,7 +216,7 @@ class Moderation(commands.Cog):
         guild_data = await get_guild_data(guild_id=after.guild.id)
         if not guild_data:
             return
-        
+
         log_channel = self.bot.get_channel(guild_data.logs_id)
         await log_channel.send(embed=embed)
 
@@ -241,7 +241,7 @@ class Moderation(commands.Cog):
         guild_data = await get_guild_data(guild_id=message.guild.id)
         if not guild_data:
             return
-        
+
         log_channel = self.bot.get_channel(guild_data.logs_id)
         await log_channel.send(embed=embed)
 
@@ -326,9 +326,9 @@ class Moderation(commands.Cog):
         task = asyncio.create_task(self.handle_punishment_expiration(punishment))
         self.active[punishment.punishment_id] = task
         task.add_done_callback(self.removal_callback(punishment.punishment_id))
-        await ctx.send(f'Punishment expiry set for {format_timestamp(terminus)} ({format_timestamp(terminus, "R")}).')
+        await ctx.send(f'Punishment expiry set for {format_dt(terminus)} ({format_dt(terminus, "R")}).')
 
-    
+
     @commands.hybrid_command()
     async def history(self, ctx: commands.Context, user_id: int):
         """
@@ -347,11 +347,11 @@ class Moderation(commands.Cog):
                 timestamp = UNKNOWN
                 try:
                     modlog_message = await modlog.fetch_message(punishment.message_id)
-                    timestamp = format_timestamp(modlog_message.created_at, 'd')
+                    timestamp = format_dt(modlog_message.created_at, 'd')
                 except discord.NotFound:
                     logger.error(f'Message ({punishment.message_id}) not found in modlog ({modlog.id}).')
                 except discord.Forbidden:
-                    logger.error(f'Permission denied to read messages in modlog.')
+                    logger.error('Permission denied to read messages in modlog.')
                 except discord.HTTPException:
                     logger.error('An error occurred while fetching the message.')
 
@@ -361,7 +361,7 @@ class Moderation(commands.Cog):
                     inline = False
                 )
         await ctx.send(embed=embed)
-    
+
     @commands.hybrid_command()
     async def lookup(self, ctx: commands.Context, case_number: int):
         """
@@ -373,7 +373,7 @@ class Moderation(commands.Cog):
             return
         content = punishment_message(punishment, redact=False)
         await ctx.send(content)
-    
+
     @commands.hybrid_command()
     async def note(self, ctx: commands.Context, user: discord.User, note: Optional[str] = None):
         """
@@ -385,7 +385,7 @@ class Moderation(commands.Cog):
                 author_id = ctx.author.id,
                 note = note
             )
-            await ctx.send(f"The note has been added.")
+            await ctx.send("The note has been added.")
         else:
             embed = discord.Embed(description=f"Notes for {user.mention}.")
             notes = await StaffNote.all()
@@ -393,14 +393,14 @@ class Moderation(commands.Cog):
                 if note.user_id == user.id:
                     author = self.bot.get_user(note.author_id)
                     author_display = f'{author.name}#{author.discriminator}' if author else UNKNOWN
-                    time_display = format_timestamp(note.timestamp, 'd') if note.timestamp else UNKNOWN
+                    time_display = format_dt(note.timestamp, 'd') if note.timestamp else UNKNOWN
                     embed.add_field(
                         name = f"Entry by {author_display} (on {time_display}):",
                         value = note.note,
                         inline = False
                     )
             await ctx.send(embed=embed)
-    
+
     @commands.group(invoke_without_command=True)
     async def purge(self, ctx: commands.Context):
         """
@@ -412,7 +412,6 @@ class Moderation(commands.Cog):
     async def message(self, ctx: commands.Context, number: int):
         """
         Bulk delete messages.
-        """
         """
         async for message in ctx.channel.history(limit=number):
             try:
@@ -474,7 +473,7 @@ class Moderation(commands.Cog):
         if not punishment:
             await ctx.send(f"Case #{case_number} does not exist.")
             return
-        
+
         reason, redact = self.parse_reason_redact(reason)
         punishment.reason = reason
         punishment.redacted = redact

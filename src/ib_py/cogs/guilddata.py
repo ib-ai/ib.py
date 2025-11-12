@@ -1,17 +1,18 @@
+import logging
 from typing import Optional
 
 import discord
-from discord import app_commands
 from discord.ext import commands
 
-from db.models import GuildData
-from db.cached import get_guild_data
+from ..config import IBPyConfig
+from ..db.cached import get_guild_data
+from ..db.models import GuildData
+from ..utils.checks import admin_command, cogify
+from ..utils.commands import available_subcommands
 
-from utils.commands import available_subcommands
-from utils.checks import cogify, admin_command
-from utils import config
+config = IBPyConfig()
+config.requires("prefix")
 
-import logging
 logger = logging.getLogger(__name__)
 
 mention_styles = {
@@ -28,13 +29,15 @@ class SetGuildData(commands.Cog, name='Guild Settings'):
 
     async def cog_load(self):
         self.bot.command_prefix = self.get_prefix
-    
+
     async def cog_unload(self):
         self.bot.command_prefix = config.prefix
 
     async def get_prefix(self, bot, message: discord.Message):
         guild_data = await get_guild_data(message.guild.id)
-        return guild_data.prefix
+        if guild_data and guild_data.prefix:
+            return guild_data.prefix
+        return config.prefix
 
 
     @staticmethod
