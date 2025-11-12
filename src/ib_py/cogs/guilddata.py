@@ -140,6 +140,28 @@ class SetGuildData(commands.Cog, name='Guild Settings'):
         desc='Toggle monitoring.'
     ))
 
+    @commands.command()
+    async def guilddata(self, ctx: commands.Context):
+        """
+        View this guild's data.
+        """
+        guild_data = await get_guild_data(ctx.guild.id)
+        if not guild_data:
+            await ctx.send("No guild data set for this guild.")
+            return
+
+        field_names = [field["name"] for field in GuildData.describe()["data_fields"]]
+        max_len = max(len(name) for name in field_names)
+        description = "\n".join(
+            f"{key:>{max_len}} = {getattr(guild_data, key)}" for key in field_names
+        )
+        embed = discord.Embed(
+            title=f"Guild Data for {ctx.guild.name} (ID: {ctx.guild.id})",
+            color=discord.Color.dark_gray(),
+            description="```" + description + "```"
+        )
+        await ctx.send(embed=embed)
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(SetGuildData(bot))
