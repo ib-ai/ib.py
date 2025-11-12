@@ -214,8 +214,8 @@ class Moderation(commands.Cog):
         embed = discord.Embed.from_dict(embed_data)
 
         guild_data = await get_guild_data(guild_id=after.guild.id)
-        if not guild_data:
-            return
+        if not guild_data or not guild_data.logs_id:
+            return  # no log channel set
 
         log_channel = self.bot.get_channel(guild_data.logs_id)
         await log_channel.send(embed=embed)
@@ -239,8 +239,8 @@ class Moderation(commands.Cog):
         embed = discord.Embed.from_dict(embed_data)
 
         guild_data = await get_guild_data(guild_id=message.guild.id)
-        if not guild_data:
-            return
+        if not guild_data or not guild_data.logs_id:
+            return  # no log channel set
 
         log_channel = self.bot.get_channel(guild_data.logs_id)
         await log_channel.send(embed=embed)
