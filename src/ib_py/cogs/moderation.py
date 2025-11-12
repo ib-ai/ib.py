@@ -198,26 +198,25 @@ class Moderation(commands.Cog):
         """
         Log message edits.
         """
-        utilities = f"[21 Jump Street]({after.jump_url})\n" \
-                  + f"User: {after.author.mention}"
-        embed_data = dict(
-            author = dict(
-                name = f'{after.author.name}#{after.author.discriminator} (ID: {after.author.id}) edited in #{after.channel.name}',
-            ),
-            color = discord.Colour.yellow().value,
-            fields = [
-                dict(name="From", value=before.content),
-                dict(name="To", value=after.content),
-                dict(name="Utilities", value=utilities)
-            ]
-        )
-        embed = discord.Embed.from_dict(embed_data)
-
         guild_data = await get_guild_data(guild_id=after.guild.id)
         if not guild_data or not guild_data.logs_id:
             return  # no log channel set
-
         log_channel = self.bot.get_channel(guild_data.logs_id)
+
+        if after.author.bot:
+            return  # ignore bot messages
+
+        embed = discord.Embed(
+            color=discord.Colour.yellow(),
+            description='\n'.join([
+                f'User: {after.author.mention} (ID: {after.author.id})',
+                f'Channel: {after.channel.mention} (ID: {after.channel.id})',
+                f'Message: [**Jump URL**]({after.jump_url}) (ID: {after.id})',
+            ])
+        )
+        embed.set_author(name=f"{after.author.name} edited a message in #{after.channel.name}", icon_url=after.author.display_avatar.url, url=after.jump_url)
+        embed.add_field(name="From", value=before.content, inline=False)
+        embed.add_field(name="To", value=after.content, inline=False)
         await log_channel.send(embed=embed)
 
     @commands.Cog.listener()
@@ -225,68 +224,25 @@ class Moderation(commands.Cog):
         """
         Log message deletes.
         """
-        utilities = f"User: {message.author.mention}"
-        embed_data = dict(
-            author = dict(
-                name = f'{message.author.name}#{message.author.discriminator} (ID: {message.author.id}) edited in #{message.channel.name}',
-            ),
-            color = discord.Colour.red().value,
-            description = message.content,
-            fields = [
-                dict(name="Utilities", value=utilities)
-            ]
-        )
-        embed = discord.Embed.from_dict(embed_data)
-
         guild_data = await get_guild_data(guild_id=message.guild.id)
         if not guild_data or not guild_data.logs_id:
             return  # no log channel set
-
         log_channel = self.bot.get_channel(guild_data.logs_id)
+
+        if message.author.bot:
+            return  # ignore bot messages
+
+        embed = discord.Embed(
+            color=discord.Colour.red(),
+            description='\n'.join([
+                f'User: {message.author.mention} (ID: {message.author.id})',
+                f'Channel: {message.channel.mention} (ID: {message.channel.id})',
+                f'Message: — (ID: {message.id})',
+            ])
+        )
+        embed.set_author(name=f"{message.author.name} deleted a message in #{message.channel.name}", icon_url=message.author.display_avatar.url, url=message.jump_url)
+        embed.add_field(name="Content", value=message.content, inline=False)
         await log_channel.send(embed=embed)
-
-
-    @commands.hybrid_command()
-    async def logs(self, ctx: commands.Context):
-        """
-        Set a channel for log messages.
-        """
-        raise NotImplementedError("Command requires implementation and permission set-up.")
-
-    @commands.hybrid_command()
-    async def moderators(self, ctx: commands.Context):
-        """
-        Set a role for moderators.
-        """
-        raise NotImplementedError("Command requires implementation and permission set-up.")
-
-    @commands.hybrid_group()
-    async def modlog(self, ctx: commands.Context):
-        """
-        Commands for setting channels to publish punishment updates to.
-        """
-        raise NotImplementedError("Command requires implementation and permission set-up.")
-
-    @modlog.command()
-    async def server(self, ctx: commands.Context):
-        """
-        Set a channel for punishment updates to be sent to publicly.
-        """
-        raise NotImplementedError("Command requires implementation and permission set-up.")
-
-    @modlog.command()
-    async def staff(self, ctx: commands.Context):
-        """
-        Set a channel for punishment updates to be sent internally.
-        """
-        raise NotImplementedError("Command requires implementation and permission set-up.")
-
-    @commands.hybrid_command()
-    async def muterole(self, ctx: commands.Context):
-        """
-        Set a role for mutes.
-        """
-        raise NotImplementedError("Command requires implementation and permission set-up.")
 
     @commands.hybrid_command()
     @describe(user="User to ban", reason="Reason for ban")
