@@ -48,22 +48,21 @@ class ChannelOrder(commands.Cog):
             embed.add_field(name=name, value=value, inline=inline)
         return embed
 
-    def create_snapshot_embed(self, category, text_channels, voice_channels, forum_channels):
+    def create_snapshot_embed(self, category, channels):
         """
         Helper function to create a snapshot embed for a given category.
+        Channels are listed on separate lines and mentioned using <#id>.
         """
         fields = []
+        if channels:
+            # Mention each channel on a new line
+            channel_mentions = "\n".join(f"<#{ch.id}>" for ch in channels)
+        else:
+            channel_mentions = "None"
 
-        if text_channels:
-            fields.append(("Text Channels", ", ".join(ch.name for ch in text_channels), False))
-
-        if voice_channels:
-            fields.append(("Voice Channels", ", ".join(ch.name for ch in voice_channels), False))
-
-        if forum_channels:
-            fields.append(("Forum Channels", ", ".join(ch.name for ch in forum_channels), False))
-
+        fields.append(("Channels", channel_mentions, False))
         return self.draw_embed(title=f"📸 Snapshot for {category.name}", fields=fields)
+
 
     @channelorder.command(name="snapshot")
     @commands.has_permissions(administrator=True)
@@ -90,7 +89,7 @@ class ChannelOrder(commands.Cog):
         # Combine: text+forum first, then voice (voice order preserved among themselves)
         all_channels = text_forum_channels + voice_channels
 
-        embed = self.create_snapshot_embed(category, text_channels, voice_channels, forum_channels)
+        embed = self.create_snapshot_embed(category, all_channels)
 
         # Upsert snapshot
         channel_ids = [ch.id for ch in all_channels]
@@ -176,8 +175,8 @@ class ChannelOrder(commands.Cog):
         await ctx.reply(f"`{category.name}` channels have been reordered to match the snapshot.", ephemeral=True)
 
 
-    @channelorder.command(name="list")
-    @commands.has_permissions(manage_channels=True)  # or use @is_staff() if you define one
+    @channelorder.command(name="view")
+    @commands.has_permissions(manage_channels=True)
     async def list_snapshot(self, ctx: commands.Context, *, category_input: str):
         """
         List the stored snapshot for a given category (by ID or name).
@@ -200,11 +199,7 @@ class ChannelOrder(commands.Cog):
         snapshot_channels = [guild.get_channel(ch_id) for ch_id in snapshot.channel_list]
 
         # Filter and group
-        text_channels = [ch for ch in snapshot_channels if ch and ch.type == discord.ChannelType.text]
-        forum_channels = [ch for ch in snapshot_channels if ch and ch.type == discord.ChannelType.forum]
-        voice_channels = [ch for ch in snapshot_channels if ch and ch.type == discord.ChannelType.voice]
-
-        embed = self.create_snapshot_embed(category, text_channels, voice_channels, forum_channels)
+        embed = self.create_snapshot_embed(category, snapshot_channels)
 
         embed.set_footer(text=f"Category ID: {category.id} | Total channels: {len(snapshot.channel_list)}")
 
