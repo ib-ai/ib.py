@@ -10,19 +10,65 @@ class ChannelOrder(commands.Cog):
 
     @commands.hybrid_group(aliases=["co"])
     async def channelorder(self, ctx: commands.Context):
-        """
-        Commands for discord channel arrangement within categories.
-        """
+        """Commands for discord channel arrangement within categories."""
         if ctx.invoked_subcommand is None:
             await ctx.send_help(ctx.command)
-    
+
+    def get_category(self, guild: discord.Guild, category_input: str | int) -> discord.CategoryChannel | None:
+        """
+        Retrieves a category from a guild by name or ID.
+        """
+        # Try ID
+        try:
+            category_id = int(category_input)
+            category = discord.utils.get(guild.categories, id=category_id)
+            if category:
+                return category
+        except ValueError:
+            pass  # Not an ID, so treat as name
+
+        # Try by name (case-insensitive)
+        category = discord.utils.find(lambda c: c.name.lower() == str(category_input).lower(), guild.categories)
+        return category
+
+    def draw_embed(self, title: str, fields: list[tuple[str, str, bool]], color=discord.Color.blue()):
+        """
+        Helper function to draw an embed with the given title, fields, and color.
+        
+        Args:
+            title (str): The title of the embed.
+            fields (list[tuple[str, str, bool]]): A list of fields where each field is a tuple (name, value, inline).
+            color (discord.Color, optional): The color of the embed. Defaults to discord.Color.blue().
+
+        Returns:
+            discord.Embed: The constructed embed object.
+        """
+        embed = discord.Embed(title=title, color=color)
+        for name, value, inline in fields:
+            embed.add_field(name=name, value=value, inline=inline)
+        return embed
+
+    def create_snapshot_embed(self, category, text_channels, voice_channels, forum_channels):
+        """
+        Helper function to create a snapshot embed for a given category.
+        """
+        fields = []
+
+        if text_channels:
+            fields.append(("Text Channels", ", ".join(ch.name for ch in text_channels), False))
+
+        if voice_channels:
+            fields.append(("Voice Channels", ", ".join(ch.name for ch in voice_channels), False))
+
+        if forum_channels:
+            fields.append(("Forum Channels", ", ".join(ch.name for ch in forum_channels), False))
+
+        return self.draw_embed(title=f"📸 Snapshot for {category.name}", fields=fields)
+
     @channelorder.command(name="snapshot")
     @commands.has_permissions(administrator=True)
-    async def snapshot(self, ctx: commands.Context, *, category_input: int):
-        """
-        Take a snapshot of all channels (text, voice, forum) in the given category.
-        Admin-only command.
-        """
+    async def snapshot(self, ctx: commands.Context, *, category_input: str):
+        """Take a snapshot of all channels (text, voice, forum) in the given category."""
         guild = ctx.guild
         category = self.get_category(guild, category_input)
 
@@ -30,79 +76,41 @@ class ChannelOrder(commands.Cog):
             await ctx.reply("Invalid category ID or name.", ephemeral=True)
             return
 
-        embed = discord.Embed(
-            title=f"📸 Snapshot for {category.name}",
-            color=discord.Color.blue()
-        )
-
-        # Get all types of channels
+                # Get all types of channels
         text_channels = category.text_channels
         voice_channels = category.voice_channels
         forum_channels = getattr(category, "forums", [])
         # Sort all channels by position
         all_channels_sorted = sorted(category.channels, key=lambda c: (c.position, c.id))
 
-        # Separate by type
+        # Separate and recombine: text+forum first, then voice (voices keep relative order)
         text_forum_channels = [ch for ch in all_channels_sorted if ch.type in (discord.ChannelType.text, discord.ChannelType.forum)]
         voice_channels = [ch for ch in all_channels_sorted if ch.type == discord.ChannelType.voice]
 
         # Combine: text+forum first, then voice (voice order preserved among themselves)
         all_channels = text_forum_channels + voice_channels
 
-        if text_channels:
-            embed.add_field(
-                name="Text Channels",
-                value=", ".join(ch.name for ch in text_channels),
-                inline=False
-            )
-
-        if voice_channels:
-            embed.add_field(
-                name="Voice Channels",
-                value=", ".join(ch.name for ch in voice_channels),
-                inline=False
-            )
-
-        if forum_channels:
-            embed.add_field(
-                name="Forum Channels",
-                value=", ".join(ch.name for ch in forum_channels),
-                inline=False
-            )
+        embed = self.create_snapshot_embed(category, text_channels, voice_channels, forum_channels)
 
         # Upsert snapshot
-        existing_snapshot = await GuildSnapshot.get_or_none(category_id=category_input)
         channel_ids = [ch.id for ch in all_channels]
+        existing_snapshot = await GuildSnapshot.get_or_none(category_id=category.id)
 
         if existing_snapshot:
-            # Update the existing snapshot
             existing_snapshot.channel_list = channel_ids
             await existing_snapshot.save()
+            msg = "Updated existing snapshot."
         else:
-            # Create a new snapshot
-            await self.save_snapshot(category.id, channel_ids)
+            await GuildSnapshot.create(category_id=category.id, channel_list=channel_ids)
+            msg = "Created new snapshot."
 
-        await ctx.reply(embed=embed, ephemeral=True)
+        embed.set_footer(text=f"Category ID: {category.id} | Total channels: {len(channel_ids)}")
 
-    def get_category(self, guild: discord.Guild, category_input: int) -> discord.CategoryChannel | None:
-        """
-        Retrieves a category from a guild by name or ID.
-        """
-        category = discord.utils.get(guild.categories, id=int(category_input))
-        if category:
-            return category
-        
-        # if not category return message with error
-    
-    async def save_snapshot(self, category_id: int, channel_ids: list[int]):
-        await GuildSnapshot.create(
-            category_id=category_id,
-            channel_list=channel_ids,
-        )
+        await ctx.reply(f"{msg}", embed=embed, ephemeral=True)
 
     @channelorder.command(aliases=["r"])
-    @commands.has_permissions(administrator=True)
-    async def rollback(self, ctx: commands.Context, *, category_input: int):
+    @commands.has_permissions(manage_channels=True)
+    async def rollback(self, ctx: commands.Context, *, category_input: str):
         """
         Rollback channels in a category to the saved snapshot order.
         """
@@ -166,6 +174,41 @@ class ChannelOrder(commands.Cog):
                 return
 
         await ctx.reply(f"`{category.name}` channels have been reordered to match the snapshot.", ephemeral=True)
+
+
+    @channelorder.command(name="list")
+    @commands.has_permissions(manage_channels=True)  # or use @is_staff() if you define one
+    async def list_snapshot(self, ctx: commands.Context, *, category_input: str):
+        """
+        List the stored snapshot for a given category (by ID or name).
+        Staff-only command.
+        """
+        guild = ctx.guild
+        category = self.get_category(guild, category_input)
+
+        if not category:
+            await ctx.reply("Invalid category ID or name.", ephemeral=True)
+            return
+
+        # Fetch snapshot from DB
+        snapshot = await GuildSnapshot.get_or_none(category_id=category.id)
+        if not snapshot:
+            await ctx.reply("No snapshot stored for this category.", ephemeral=True)
+            return
+
+        # Retrieve channels from snapshot (if still exist)
+        snapshot_channels = [guild.get_channel(ch_id) for ch_id in snapshot.channel_list]
+
+        # Filter and group
+        text_channels = [ch for ch in snapshot_channels if ch and ch.type == discord.ChannelType.text]
+        forum_channels = [ch for ch in snapshot_channels if ch and ch.type == discord.ChannelType.forum]
+        voice_channels = [ch for ch in snapshot_channels if ch and ch.type == discord.ChannelType.voice]
+
+        embed = self.create_snapshot_embed(category, text_channels, voice_channels, forum_channels)
+
+        embed.set_footer(text=f"Category ID: {category.id} | Total channels: {len(snapshot.channel_list)}")
+
+        await ctx.reply(embed=embed, ephemeral=True)
 
 
 
