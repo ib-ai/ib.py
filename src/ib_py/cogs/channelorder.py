@@ -76,9 +76,7 @@ class ChannelOrder(commands.Cog):
             return
 
                 # Get all types of channels
-        text_channels = category.text_channels
         voice_channels = category.voice_channels
-        forum_channels = getattr(category, "forums", [])
         # Sort all channels by position
         all_channels_sorted = sorted(category.channels, key=lambda c: (c.position, c.id))
 
