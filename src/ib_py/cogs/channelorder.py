@@ -3,6 +3,16 @@ from discord.ext import commands
 
 from ..db.models import GuildSnapshot
 
+TEXT_CHANNEL_TYPES = {
+    discord.ChannelType.text,
+    discord.ChannelType.news,
+    discord.ChannelType.forum
+}
+
+VOICE_CHANNEL_TYPES = {
+    discord.ChannelType.voice,
+    discord.ChannelType.stage_voice
+}
 
 class ChannelOrder(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -30,24 +40,7 @@ class ChannelOrder(commands.Cog):
         # Try by name (case-insensitive)
         category = discord.utils.find(lambda c: c.name.lower() == str(category_input).lower(), guild.categories)
         return category
-
-    def draw_embed(self, title: str, fields: list[tuple[str, str, bool]], color=discord.Color.blue()):
-        """
-        Helper function to draw an embed with the given title, fields, and color.
         
-        Args:
-            title (str): The title of the embed.
-            fields (list[tuple[str, str, bool]]): A list of fields where each field is a tuple (name, value, inline).
-            color (discord.Color, optional): The color of the embed. Defaults to discord.Color.blue().
-
-        Returns:
-            discord.Embed: The constructed embed object.
-        """
-        embed = discord.Embed(title=title, color=color)
-        for name, value, inline in fields:
-            embed.add_field(name=name, value=value, inline=inline)
-        return embed
-
     def create_snapshot_embed(self, category, channels):
         """
         Helper function to create a snapshot embed for a given category.
@@ -61,7 +54,11 @@ class ChannelOrder(commands.Cog):
             channel_mentions = "None"
 
         fields.append(("Channels", channel_mentions, False))
-        return self.draw_embed(title=f"📸 Snapshot for {category.name}", fields=fields)
+
+        embed = discord.Embed(title=f"📸 Snapshot for {category.name}", color=discord.Color.blue())
+        for name, value, inline in fields:
+            embed.add_field(name=name, value=value, inline=inline)
+        return embed
 
 
     @channelorder.command(name="snapshot")
@@ -72,17 +69,15 @@ class ChannelOrder(commands.Cog):
         category = self.get_category(guild, category_input)
 
         if not category:
-            await ctx.reply("Invalid category ID or name.", ephemeral=True)
+            await ctx.reply("Invalid category ID or name.")
             return
 
-                # Get all types of channels
-        voice_channels = category.voice_channels
         # Sort all channels by position
         all_channels_sorted = sorted(category.channels, key=lambda c: (c.position, c.id))
 
         # Separate and recombine: text+forum first, then voice (voices keep relative order)
-        text_forum_channels = [ch for ch in all_channels_sorted if ch.type in (discord.ChannelType.text, discord.ChannelType.forum)]
-        voice_channels = [ch for ch in all_channels_sorted if ch.type == discord.ChannelType.voice]
+        text_forum_channels = [ch for ch in all_channels_sorted if ch.type in TEXT_CHANNEL_TYPES]
+        voice_channels = [ch for ch in all_channels_sorted if ch.type in VOICE_CHANNEL_TYPES]
 
         # Combine: text+forum first, then voice (voice order preserved among themselves)
         all_channels = text_forum_channels + voice_channels
@@ -103,7 +98,7 @@ class ChannelOrder(commands.Cog):
 
         embed.set_footer(text=f"Category ID: {category.id} | Total channels: {len(channel_ids)}")
 
-        await ctx.reply(f"{msg}", embed=embed, ephemeral=True)
+        await ctx.reply(f"{msg}", embed=embed)
 
     @channelorder.command(aliases=["r"])
     @commands.has_permissions(manage_channels=True)
@@ -115,13 +110,13 @@ class ChannelOrder(commands.Cog):
         category = self.get_category(guild, category_input)
         
         if not category:
-            await ctx.reply("Invalid category ID or name.", ephemeral=True)
+            await ctx.reply("Invalid category ID or name.")
             return
 
         # Fetch snapshot
         snapshot = await GuildSnapshot.get_or_none(category_id=category.id)
         if not snapshot:
-            await ctx.reply("No snapshot exists for this category.", ephemeral=True)
+            await ctx.reply("No snapshot exists for this category.")
             return
 
         # Map current channels
@@ -129,18 +124,15 @@ class ChannelOrder(commands.Cog):
         new_order = [channels_map.get(ch_id) for ch_id in snapshot.channel_list if channels_map.get(ch_id)]
 
         if not new_order:
-            await ctx.reply("Snapshot channel IDs do not match current channels.", ephemeral=True)
+            await ctx.reply("Snapshot channel IDs do not match current channels.")
             return
 
-        # Check if already in order
-         # Get all types of channels
-        voice_channels = category.voice_channels
         # Sort all channels by position
         all_channels_sorted = sorted(category.channels, key=lambda c: (c.position, c.id))
 
         # Separate by type
-        text_forum_channels = [ch for ch in all_channels_sorted if ch.type in (discord.ChannelType.text, discord.ChannelType.forum)]
-        voice_channels = [ch for ch in all_channels_sorted if ch.type == discord.ChannelType.voice]
+        text_forum_channels = [ch for ch in all_channels_sorted if ch.type in TEXT_CHANNEL_TYPES]
+        voice_channels = [ch for ch in all_channels_sorted if ch.type in VOICE_CHANNEL_TYPES]
 
         # Combine: text+forum first, then voice (voice order preserved among themselves)
         all_channels = text_forum_channels + voice_channels
@@ -156,7 +148,7 @@ class ChannelOrder(commands.Cog):
         new_order_ids = [ch.id for ch in new_order]
 
         if current_order_ids[:len(new_order_ids)] == new_order_ids:
-            await ctx.reply("Channels are already in the snapshot order. No changes needed.", ephemeral=True)
+            await ctx.reply("Channels are already in the snapshot order. No changes needed.")
             return
 
         # Move only out-of-position channels
@@ -164,13 +156,13 @@ class ChannelOrder(commands.Cog):
             try:
                 await ch.edit(position=new_pos)
             except discord.Forbidden:
-                await ctx.reply(f"Missing permission to edit {ch.name}.", ephemeral=True)
+                await ctx.reply(f"Missing permission to edit {ch.name}.")
                 return
             except discord.HTTPException as e:
-                await ctx.reply(f"Failed to reorder {ch.name}: {e}", ephemeral=True)
+                await ctx.reply(f"Failed to reorder {ch.name}: {e}")
                 return
 
-        await ctx.reply(f"`{category.name}` channels have been reordered to match the snapshot.", ephemeral=True)
+        await ctx.reply(f"`{category.name}` channels have been reordered to match the snapshot.")
 
 
     @channelorder.command(name="view")
@@ -184,13 +176,13 @@ class ChannelOrder(commands.Cog):
         category = self.get_category(guild, category_input)
 
         if not category:
-            await ctx.reply("Invalid category ID or name.", ephemeral=True)
+            await ctx.reply("Invalid category ID or name.")
             return
 
         # Fetch snapshot from DB
         snapshot = await GuildSnapshot.get_or_none(category_id=category.id)
         if not snapshot:
-            await ctx.reply("No snapshot stored for this category.", ephemeral=True)
+            await ctx.reply("No snapshot stored for this category.")
             return
 
         # Retrieve channels from snapshot (if still exist)
@@ -201,7 +193,7 @@ class ChannelOrder(commands.Cog):
 
         embed.set_footer(text=f"Category ID: {category.id} | Total channels: {len(snapshot.channel_list)}")
 
-        await ctx.reply(embed=embed, ephemeral=True)
+        await ctx.reply(embed=embed)
 
 
 
