@@ -126,16 +126,16 @@ class Moderation(commands.Cog):
         punishment = await StaffPunishment.create(
             punishment_type = punishment_type,
             guild_id = entry.guild.id,
-            user_display = f'{offender.name}#{offender.discriminator}',
+            user_display = f'{offender.name}',
             user_id = offender.id,
-            staff_display = f'{entry.user.name}#{entry.user.discriminator}',
+            staff_display = f'{entry.user.name}',
             staff_id = entry.user.id,
             reason = reason,
             redacted = redact,
         )
 
         if not reason:
-            punishment.reason = f'Use `{guild_data.prefix}reason {punishment.punishment_id} <reason>` to specify a reason.'
+            punishment.reason = f'Use `{self.bot.command_prefix}reason {punishment.punishment_id} <reason>` to specify a reason.'
             await punishment.save()
 
         if internal_log:
@@ -163,6 +163,14 @@ class Moderation(commands.Cog):
             return  # nowhere to publish
 
         pardoned = entry.target if isinstance(entry.target, discord.User) else await self.bot.fetch_user(entry.target.id)
+
+        if internal_log:
+            log_message = f'**{revocation_format[punishment_type]}**\n' \
+                        + f'**Pardoned: **<@{pardoned.id}> (User: {pardoned.name}#{pardoned.discriminator}, ID: {pardoned.id})\n' \
+                        + f'**Moderator: **{entry.user.name}#{entry.user.discriminator} (ID: {entry.user.id})'
+            channel = self.bot.get_channel(internal_log)
+            await channel.send(log_message)
+
         if public_log:
             log_message = f'**{revocation_format[punishment_type]}**\n' \
                         + f'**Pardoned: **<@{pardoned.id}> (User: {pardoned.name}#{pardoned.discriminator}, ID: {pardoned.id})\n' \
@@ -208,15 +216,25 @@ class Moderation(commands.Cog):
 
         embed = discord.Embed(
             color=discord.Colour.yellow(),
-            description='\n'.join([
+            description=before.content if before.content else "(no content)",
+        )
+        embed.set_author(
+            name=f"{after.author.name} edited a message in #{after.channel.name}",
+            icon_url=after.author.display_avatar.url,
+            url=after.jump_url
+        )
+        embed.add_field(
+            name="Edited to",
+            value=after.content if after.content else "(no content)",
+            inline=False
+        )
+        embed.add_field(
+            name="Utilities",
+            value='\n'.join([
                 f'User: {after.author.mention} (ID: {after.author.id})',
-                f'Channel: {after.channel.mention} (ID: {after.channel.id})',
                 f'Message: [**Jump URL**]({after.jump_url}) (ID: {after.id})',
             ])
         )
-        embed.set_author(name=f"{after.author.name} edited a message in #{after.channel.name}", icon_url=after.author.display_avatar.url, url=after.jump_url)
-        embed.add_field(name="From", value=before.content, inline=False)
-        embed.add_field(name="To", value=after.content, inline=False)
         await log_channel.send(embed=embed)
 
     @commands.Cog.listener()
@@ -234,14 +252,20 @@ class Moderation(commands.Cog):
 
         embed = discord.Embed(
             color=discord.Colour.red(),
-            description='\n'.join([
+            description=message.content if message.content else "(no content)",
+        )
+        embed.set_author(
+            name=f"{message.author.name} deleted a message in #{message.channel.name}",
+            icon_url=message.author.display_avatar.url,
+            url=message.jump_url
+        )
+        embed.add_field(
+            name="Utilities",
+            value='\n'.join([
                 f'User: {message.author.mention} (ID: {message.author.id})',
-                f'Channel: {message.channel.mention} (ID: {message.channel.id})',
-                f'Message: — (ID: {message.id})',
+                f'Message: [**Jump URL**]({message.jump_url}) (ID: {message.id})',
             ])
         )
-        embed.set_author(name=f"{message.author.name} deleted a message in #{message.channel.name}", icon_url=message.author.display_avatar.url, url=message.jump_url)
-        embed.add_field(name="Content", value=message.content, inline=False)
         await log_channel.send(embed=embed)
 
     @commands.hybrid_command()
@@ -286,36 +310,20 @@ class Moderation(commands.Cog):
 
 
     @commands.hybrid_command()
-    async def history(self, ctx: commands.Context, user_id: int):
+    async def history(self, ctx: commands.Context, user: discord.User):
         """
         Display a user's punishment history.
         """
-        guild_data = await get_guild_data(guild_id=ctx.guild.id)
-        modlog = self.bot.get_channel(guild_data.modlog_id)
-        if not modlog:
-            # TODO: do some logging
-            return
-
-        embed = discord.Embed(description=f"History of <@{user_id}>.")
-        punishments = await StaffPunishment.all()
+        embed = discord.Embed(description=f"History of {user.mention}.")
+        punishments = await StaffPunishment.filter(user_id=user.id).order_by('timestamp').all()
         for punishment in punishments:
-            if punishment.user_id == user_id:
-                timestamp = UNKNOWN
-                try:
-                    modlog_message = await modlog.fetch_message(punishment.message_id)
-                    timestamp = format_dt(modlog_message.created_at, 'd')
-                except discord.NotFound:
-                    logger.error(f'Message ({punishment.message_id}) not found in modlog ({modlog.id}).')
-                except discord.Forbidden:
-                    logger.error('Permission denied to read messages in modlog.')
-                except discord.HTTPException:
-                    logger.error('An error occurred while fetching the message.')
-
-                embed.add_field(
-                    name = f"Case #{punishment.punishment_id} ({timestamp}) - By {punishment.staff_display}",
-                    value = f"{punishment_format[punishment.punishment_type]} - {punishment.reason}",
-                    inline = False
-                )
+            timestamp_display = format_dt(punishment.timestamp, 'd') if punishment.timestamp else UNKNOWN
+            staff_display = punishment.staff_display if not punishment.redacted else UNKNOWN
+            embed.add_field(
+                name = f"Case #{punishment.punishment_id} ({timestamp_display}) - By {staff_display}",
+                value = f"{punishment_format[punishment.punishment_type]} - {punishment.reason}",
+                inline = False,
+            )
         await ctx.send(embed=embed)
 
     @commands.hybrid_command()
@@ -331,7 +339,7 @@ class Moderation(commands.Cog):
         await ctx.send(content)
 
     @commands.hybrid_command()
-    async def note(self, ctx: commands.Context, user: discord.User, note: Optional[str] = None):
+    async def note(self, ctx: commands.Context, user: discord.User, *, note: Optional[str] = None):
         """
         Save a note on a user.
         """
@@ -342,20 +350,18 @@ class Moderation(commands.Cog):
                 note = note
             )
             await ctx.send("The note has been added.")
-        else:
-            embed = discord.Embed(description=f"Notes for {user.mention}.")
-            notes = await StaffNote.all()
-            for note in notes:
-                if note.user_id == user.id:
-                    author = self.bot.get_user(note.author_id)
-                    author_display = f'{author.name}#{author.discriminator}' if author else UNKNOWN
-                    time_display = format_dt(note.timestamp, 'd') if note.timestamp else UNKNOWN
-                    embed.add_field(
-                        name = f"Entry by {author_display} (on {time_display}):",
-                        value = note.note,
-                        inline = False
-                    )
-            await ctx.send(embed=embed)
+        embed = discord.Embed(description=f"Notes for {user.mention}.")
+        notes = await StaffNote.filter(user_id=user.id).order_by('timestamp').all()
+        for note in notes:
+            author = self.bot.get_user(note.author_id)
+            author_display = f'{author.name}#{author.discriminator}' if author else UNKNOWN
+            time_display = format_dt(note.timestamp, 'd') if note.timestamp else UNKNOWN
+            embed.add_field(
+                name = f"Entry by {author_display} (on {time_display}):",
+                value = note.note,
+                inline = False,
+            )
+        await ctx.send(embed=embed)
 
     @commands.group(invoke_without_command=True)
     async def purge(self, ctx: commands.Context):

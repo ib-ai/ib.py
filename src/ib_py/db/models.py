@@ -187,14 +187,16 @@ class StaffPunishment(Model):
 
     punishment_id = fields.IntField(pk=True)
     punishment_type = fields.CharEnumField(PunishmentType)
+    guild_id = fields.BigIntField()
     user_display = fields.CharField(max_length=256)
     user_id = fields.BigIntField()
     staff_display = fields.CharField(max_length=256)
     staff_id = fields.BigIntField()
     reason = fields.CharField(max_length=1024)
     redacted = fields.BooleanField(default=False)
-    message_id = fields.BigIntField()
-    message_staff_id = fields.BigIntField()
+    message_id = fields.BigIntField(null=True)
+    message_staff_id = fields.BigIntField(null=True)
+    timestamp = fields.DatetimeField(auto_now_add=True)
     expiry = fields.DatetimeField(null=True)
 
 

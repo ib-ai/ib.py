@@ -93,7 +93,6 @@ class SetGuildData(commands.Cog, name='Guild Settings'):
 
     cog_check = cogify(admin_command())
 
-
     async def cog_load(self):
         self.bot.command_prefix = self.get_prefix
 
@@ -156,7 +155,7 @@ class SetGuildData(commands.Cog, name='Guild Settings'):
             get_guild_data.cache_clear()
 
             if thing:
-                await ctx.send(f'`{dataname}` set to ID of <{style}{thing.id}> for this guild.')
+                await ctx.send(f'`{dataname}` set to <{style}{thing.id}> (ID: {thing.id}) for this guild.')
             else:
                 await ctx.send(f'`{dataname}` set to `None` for this guild.')
         return cmd
@@ -172,20 +171,20 @@ class SetGuildData(commands.Cog, name='Guild Settings'):
         set.command(name=name)(guild_data_set_factory(**kwargs))
 
     @set.command()
-    async def prefix(self, ctx, prefix):
+    async def prefix(self, ctx: commands.Context, prefix: Optional[str] = None):
         """
         Set a custom bot prefix for this guild.
         """
         prefix = prefix or config.prefix
         values = {'prefix': prefix}
-        guild_data, created = await GuildData.update_or_create(values, guild_id = ctx.guild.id)
+        await GuildData.update_or_create(values, guild_id = ctx.guild.id)
         get_guild_data.cache_clear()
 
-        await ctx.send(f'`prefix` set to ID of `{prefix}` for this guild.')
+        await ctx.send(f'`prefix` set to `{prefix}` for this guild.')
 
 
     @staticmethod
-    def guild_data_toggle_factory(*datanames: str, desc: Optional[str] = None):
+    def guild_data_toggle_factory(datanames: list[str], desc: Optional[str] = None):
         async def cmd(ctx: commands.Context):
             f"""
             {desc}
@@ -205,10 +204,7 @@ class SetGuildData(commands.Cog, name='Guild Settings'):
         await available_subcommands(ctx)
 
     for name, kwargs in GUILD_CONFIGURATION_TOGGLES.items():
-        toggle.command(name=name)(guild_data_toggle_factory(
-            *kwargs['datanames'],
-            desc=kwargs['desc']
-        ))
+        toggle.command(name=name)(guild_data_toggle_factory(**kwargs))
 
 
 async def setup(bot: commands.Bot):
