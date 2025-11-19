@@ -135,7 +135,8 @@ class Moderation(commands.Cog):
         )
 
         if not reason:
-            punishment.reason = f'Use `{self.bot.command_prefix}reason {punishment.punishment_id} <reason>` to specify a reason.'
+            prefix = guild_data.prefix or config.prefix
+            punishment.reason = f'Use `{prefix}reason {punishment.punishment_id} <reason>` to specify a reason.'
             await punishment.save()
 
         if internal_log:
@@ -166,15 +167,15 @@ class Moderation(commands.Cog):
 
         if internal_log:
             log_message = f'**{revocation_format[punishment_type]}**\n' \
-                        + f'**Pardoned: **<@{pardoned.id}> (User: {pardoned.name}#{pardoned.discriminator}, ID: {pardoned.id})\n' \
-                        + f'**Moderator: **{entry.user.name}#{entry.user.discriminator} (ID: {entry.user.id})'
+                        + f'**Pardoned: **<@{pardoned.id}> (User: {pardoned.name}, ID: {pardoned.id})\n' \
+                        + f'**Moderator: **{entry.user.name} (ID: {entry.user.id})'
             channel = self.bot.get_channel(internal_log)
             await channel.send(log_message)
 
         if public_log:
             log_message = f'**{revocation_format[punishment_type]}**\n' \
-                        + f'**Pardoned: **<@{pardoned.id}> (User: {pardoned.name}#{pardoned.discriminator}, ID: {pardoned.id})\n' \
-                        + f'**Moderator: **{entry.user.name}#{entry.user.discriminator} (ID: {entry.user.id})'
+                        + f'**Pardoned: **<@{pardoned.id}> (User: {pardoned.name}, ID: {pardoned.id})\n' \
+                        + f'**Moderator: **{entry.user.name} (ID: {entry.user.id})'
             channel = self.bot.get_channel(public_log)
             await channel.send(log_message)
 
