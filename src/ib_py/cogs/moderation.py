@@ -314,16 +314,19 @@ class Moderation(commands.Cog):
         """
         Display a user's punishment history.
         """
+        guild_data = await get_guild_data(guild_id=ctx.guild.id)
+        add_links = guild_data and guild_data.modlog_id
+
         embed = discord.Embed(description=f"History of {user.mention}.")
         punishments = await StaffPunishment.filter(user_id=user.id).order_by('timestamp').all()
         for punishment in punishments:
             timestamp_display = format_dt(punishment.timestamp, 'd') if punishment.timestamp else UNKNOWN
             staff_display = punishment.staff_display if not punishment.redacted else UNKNOWN
-            embed.add_field(
-                name = f"Case #{punishment.punishment_id} ({timestamp_display}) - By {staff_display}",
-                value = f"{punishment_format[punishment.punishment_type]} - {punishment.reason}",
-                inline = False,
-            )
+            title = f"Case #{punishment.punishment_id} | {punishment_format[punishment.punishment_type]} (by {staff_display} on {timestamp_display})"
+            body = f"{punishment.reason}"
+            if add_links and punishment.message_id:
+                body += f"\n-# [*Jump to modlog entry.*](https://discord.com/channels/{punishment.guild_id}/{guild_data.modlog_id}/{punishment.message_id})"
+            embed.add_field(name=title, value=body, inline=False)
         await ctx.send(embed=embed)
 
     @commands.hybrid_command()
@@ -336,6 +339,10 @@ class Moderation(commands.Cog):
             await ctx.send(f"Case #{case_number} does not exist.")
             return
         content = punishment_message(punishment, redact=False)
+
+        guild_data = await get_guild_data(guild_id=punishment.guild_id)
+        if guild_data and guild_data.modlog_id:
+            content += f'\n-# [Go to message](https://discord.com/channels/{punishment.guild_id}/{guild_data.modlog_id}/{punishment.message_id})'
         await ctx.send(content)
 
     @commands.hybrid_command()
@@ -354,7 +361,7 @@ class Moderation(commands.Cog):
         notes = await StaffNote.filter(user_id=user.id).order_by('timestamp').all()
         for note in notes:
             author = self.bot.get_user(note.author_id)
-            author_display = f'{author.name}#{author.discriminator}' if author else UNKNOWN
+            author_display = author.name if author else UNKNOWN
             time_display = format_dt(note.timestamp, 'd') if note.timestamp else UNKNOWN
             embed.add_field(
                 name = f"Entry by {author_display} (on {time_display}):",
