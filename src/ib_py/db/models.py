@@ -8,7 +8,9 @@ from tortoise.models import Model
 
 
 class PunishmentType(str, enum.Enum):
+    WARN = "warn"
     KICK = "kick"
+    TIMEOUT = "timeout"
     MUTE = "mute"
     BAN = "ban"
     UNKNOWN = "unknown"
@@ -198,6 +200,7 @@ class StaffPunishment(Model):
     message_staff_id = fields.BigIntField(null=True)
     timestamp = fields.DatetimeField(auto_now_add=True)
     expiry = fields.DatetimeField(null=True)
+    expiry_complete = fields.BooleanField(default=True)
 
 
 # Helper Tables
@@ -220,8 +223,10 @@ class MemberRole(Model):
     class Meta:
         table = "member_role"
 
-    user_id = fields.BigIntField(pk=True)
-    role_ids = ArrayField()
+    sticky_role_id = fields.IntField(pk=True)
+    guild_id = fields.BigIntField()
+    user_id = fields.BigIntField()
+    role_ids = ArrayField(element_type="bigint", default=list)
 
 
 class MemberOpt(Model):

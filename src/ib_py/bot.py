@@ -74,6 +74,8 @@ class IBpy(commands.Bot):
 
         await self.get_cog("Reminder").schedule_existing_reminders()
         logger.info("Existing reminders queued.")
+        await self.get_cog("Moderation").schedule_existing_punishment_expirations()
+        logger.info("Existing punishment expirations queued.")
 
     async def on_command_error(self, ctx: commands.Context, exception) -> None:
         # sends the error message as a discord message

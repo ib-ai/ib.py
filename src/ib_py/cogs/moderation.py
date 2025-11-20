@@ -2,6 +2,7 @@ import asyncio
 import logging
 from collections.abc import Callable, Mapping
 from typing import Optional
+from datetime import timedelta
 
 import discord
 from discord.app_commands import describe
@@ -9,23 +10,31 @@ from discord.ext import commands
 from discord.utils import format_dt
 from tortoise import timezone
 
+from ..config import IBPyConfig
 from ..db.cached import get_guild_data
-from ..db.models import PunishmentType, StaffNote, StaffPunishment
+from ..db.models import PunishmentType, StaffNote, StaffPunishment, MemberRole
 from ..utils.commands import available_subcommands
 from ..utils.converters import DatetimeConverter
-from ..utils.time import long_sleep_until
+from ..utils.time import long_sleep_until, parse_time
+
+config = IBPyConfig()
+config.requires("prefix")
 
 logger = logging.getLogger(__name__)
 
 UNKNOWN = "???"
 punishment_format = {
+    PunishmentType.WARN: "Warn :warning:",
     PunishmentType.KICK: "Kick :boot:",
+    PunishmentType.TIMEOUT: "Timeout :hourglass_flowing_sand:",
     PunishmentType.MUTE: "Mute :zipper_mouth:",
     PunishmentType.BAN: "Ban :hammer:",
     PunishmentType.UNKNOWN: UNKNOWN,
 }
 revocation_format = {
+    PunishmentType.WARN: UNKNOWN,
     PunishmentType.KICK: UNKNOWN,
+    PunishmentType.TIMEOUT: "Untimeout :hourglass:",
     PunishmentType.MUTE: "Unmute :speaking_head:",
     PunishmentType.BAN: "Unban :angel:",
     PunishmentType.UNKNOWN: UNKNOWN,
@@ -70,6 +79,7 @@ class Moderation(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.active = {}
+        self.incomplete_unmutes = {}
 
     async def handle_punishment_expiration(self, punishment: StaffPunishment):
         await long_sleep_until(punishment.expiry)
@@ -80,7 +90,18 @@ class Moderation(commands.Cog):
             user = await self.bot.fetch_user(punishment.user_id)
             await guild.unban(user, reason=f'Punishment case no. {punishment.punishment_id} expired.')
         elif punishment_type == PunishmentType.MUTE:
-            pass  # leaving this for now
+            guild = self.bot.get_guild(punishment.guild_id)
+            member = guild.get_member(punishment.user_id)
+            if not member:
+                self.incomplete_unmutes[(punishment.guild_id, punishment.user_id)] = punishment.punishment_id
+                return  # user left the guild before unmute could be processed
+
+            guild_data = await get_guild_data(guild_id=punishment.guild_id)
+            mute_role = guild.get_role(guild_data.mute_id)
+            if mute_role not in member.roles:
+                return  # user was manually unmuted before expiration
+
+            await member.remove_roles(mute_role, reason=f'Punishment case no. {punishment.punishment_id} expired.')
 
     def removal_callback(self, id: int):
         def callback(task: asyncio.Task):
@@ -88,6 +109,22 @@ class Moderation(commands.Cog):
         return callback
 
     async def schedule_existing_punishment_expirations(self):
+        # address punishments that expired in the past while the bot was offline
+        punishments = await StaffPunishment.filter(expiry__isnull=False, expiry__lt=timezone.now(), expiry_complete=False)
+        if not punishments:
+            logger.debug('No existing punishments with expirations in the past.')
+        
+        async with asyncio.TaskGroup():
+            for punishment in punishments:
+                task = asyncio.create_task(self.handle_punishment_expiration(punishment))
+                self.active[punishment.punishment_id] = task
+                task.add_done_callback(self.removal_callback(punishment.punishment_id))
+
+                punishment.expiry_complete = True
+                await punishment.save()
+                logger.debug(f'Punishment expiration marked complete: id={punishment.punishment_id}')
+
+        # address punishments that are still pending expiration
         punishments = await StaffPunishment.filter(expiry__isnull=False, expiry__gte=timezone.now())
         if not punishments:
             logger.debug('No existing punishments with expirations in the future.')
@@ -195,12 +232,90 @@ class Moderation(commands.Cog):
     async def on_audit_log_entry_create(self, entry: discord.AuditLogEntry):
         if entry.action == discord.AuditLogAction.kick:
             await self.publish_punishment_log(PunishmentType.KICK, entry)
+        elif entry.action == discord.AuditLogAction.member_update:
+            return  # don't use timeouts as of now
+
+            if entry.user.bot:
+                return  # ignore bot actions
+
+            if not hasattr(entry.changes, 'timed_out_until'):
+                return  # not a timeout change
+            
+            if not entry.after.timed_out_until:
+                # timeout removed
+                await self.publish_revocation_log(PunishmentType.TIMEOUT, entry)
+                return
+
+            guild_data = await get_guild_data(guild_id=entry.guild.id)
+            if not guild_data or not guild_data.modlog_staff_id:
+                if guild_data.logs_id:  # try bot log as fallback
+                    channel = self.bot.get_channel(guild_data.logs_id)
+                    await channel.send(
+                        entry.user.mention + " there is no staff log channel set for this server. Please set one up to use timeouts as punishments."
+                    )
+                return  # no log channel set
+            staff_modlog = self.bot.get_channel(guild_data.modlog_staff_id)
+
+            # process reason string
+            if not entry.reason:
+                await staff_modlog.send(
+                    entry.user.mention + " no duration provided in the timeout reason."
+                )
+                await entry.target.timeout(None, reason="No duration provided.")
+                return
+
+            try:
+                tokens = entry.reason.split()
+                duration = tokens[0]
+                dt = await parse_time(duration)
+            except commands.BadArgument:
+                await staff_modlog.send(
+                    entry.user.mention + " invalid duration provided in the timeout reason."
+                )
+                await entry.target.timeout(None, reason="Invalid duration provided.")
+                return
+            
+            if dt - timezone.now() > timedelta(days=28):
+                await staff_modlog.send(
+                    entry.user.mention + " timeout duration exceeds maximum of 28 days."
+                )
+                await entry.target.timeout(None, reason="Timeout duration exceeds maximum of 28 days.")
+                return
+
+            await entry.target.timeout(dt, reason=' '.join(tokens[1:]) if len(tokens) > 1 else "No reason provided.")
+
+            entry.reason = ' '.join(tokens[1:])  # remove duration from reason
+            await self.publish_punishment_log(PunishmentType.TIMEOUT, entry)
         elif entry.action == discord.AuditLogAction.ban:
             await self.publish_punishment_log(PunishmentType.BAN, entry)
         elif entry.action == discord.AuditLogAction.unban:
             await self.publish_revocation_log(PunishmentType.BAN, entry)
+            if entry.user.bot:  # expiry
+                punishment = await StaffPunishment.filter(
+                    user_id=entry.target.id,
+                    guild_id=entry.guild.id,
+                    punishment_type=PunishmentType.BAN,
+                    expiry__isnull=False,
+                ).order_by('-timestamp').first()
+                if not punishment:
+                    return  # no matching punishment found
+
+                punishment.expiry_complete = True
+                await punishment.save()
         elif entry.action == discord.AuditLogAction.member_role_update:
-            pass  # leave this for now, TODO: look into timeouts
+            guild_data = await get_guild_data(guild_id=entry.guild.id)
+            if not guild_data.mute_id:
+                return  # no mute role set
+
+            if not hasattr(entry.after, "roles"):
+                return  # not a role change, cannot be a mute/unmute
+
+            if any(guild_data.mute_id == role.id for role in entry.before.roles):
+                # unmute
+                await self.publish_revocation_log(PunishmentType.MUTE, entry)
+            elif any(guild_data.mute_id == role.id for role in entry.after.roles) and not entry.user.bot:
+                # mute
+                await self.publish_punishment_log(PunishmentType.MUTE, entry)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
@@ -268,6 +383,46 @@ class Moderation(commands.Cog):
             ])
         )
         await log_channel.send(embed=embed)
+    
+    @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member):
+        """
+        Handle incomplete unmutes when a member rejoins.
+        """
+        sticky_roles = await MemberRole.get_or_none(guild_id=member.guild.id, user_id=member.id)
+        if not sticky_roles:
+            return
+        roles = [
+            role
+            for role_id in sticky_roles.role_ids
+            if (role := member.guild.get_role(role_id)) is not None and role.name != "@everyone"
+        ]
+        if roles:
+            await member.add_roles(*roles)
+
+        if (member.guild.id, member.id) in self.incomplete_unmutes:
+            guild_data = await get_guild_data(guild_id=member.guild.id)
+            mute_role = member.guild.get_role(guild_data.mute_id)
+            if mute_role in member.roles:
+                await member.remove_roles(mute_role, reason="Punishment case expired while user was not in guild.")
+
+            punishment_id = self.incomplete_unmutes[(member.guild.id, member.id)]
+            punishment = await StaffPunishment.get(punishment_id=punishment_id)
+            punishment.expiry_complete = True
+            await punishment.save()
+
+            del self.incomplete_unmutes[(member.guild.id, member.id)]
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
+        """
+        Update sticky roles when a member's roles change.
+        """
+        sticky_roles, _ = await MemberRole.get_or_create(guild_id=after.guild.id, user_id=after.id, defaults={"role_ids": []})
+
+        # Update the sticky roles to match the current roles
+        sticky_roles.role_ids = [role.id for role in after.roles]
+        await sticky_roles.save()
 
     @commands.hybrid_command()
     @describe(user="User to ban", reason="Reason for ban")
@@ -302,6 +457,7 @@ class Moderation(commands.Cog):
             return
 
         punishment.expiry = terminus
+        punishment.expiry_complete = False
         await punishment.save()
 
         task = asyncio.create_task(self.handle_punishment_expiration(punishment))

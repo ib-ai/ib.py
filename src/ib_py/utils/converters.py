@@ -39,8 +39,8 @@ class DatetimeConverter(commands.Converter):
                     "Timestamp cannot correspond to a time in the past."
                 )
             return datetime.fromtimestamp(timestamp, tz=timezone.get_default_timezone())
-        except (ValueError, OSError, OverflowError):
-            logger.debug("Direct timestamp conversion failed.")
+        except (ValueError, OSError, OverflowError) as e:
+            logger.debug(f"Direct timestamp conversion failed: {e}")
 
         try:
             delta = parse_time(arg)
