@@ -348,6 +348,432 @@ class TestAuditLog:
 
 
 @scenario_class
+@cleanup_tables(StaffPunishment, GuildData)
+class TestPunishmentLogs:
+    """Tests for punishment logging in modlog and modlog_staff channels."""
+
+    @scenario_fixture(["entry", "modlog_channel", "modlog_staff_channel"])
+    async def punishment_log_setup(self, moderation_cog, ctx):
+        modlog_channel = MockChannel(id=12345, guild=ctx.guild)
+        modlog_staff_channel = MockChannel(id=12346, guild=ctx.guild)
+        ctx.guild.channels = [modlog_channel, modlog_staff_channel]
+        moderation_cog.bot.guilds = [ctx.guild]
+
+        user = MockUser(id=111111111, name="TestUser")
+        staff = MockUser(id=999999999, name="Moderator")
+        entry = MockAuditLogEntry(
+            action=discord.AuditLogAction.ban,
+            target=user,
+            user=staff,
+            guild=ctx.guild,
+            reason="test reason",
+        )
+        return locals()
+
+    async def test_publish_punishment_log_no_guild_data(
+        self, moderation_cog, entry, modlog_channel, modlog_staff_channel
+    ):
+        """Test publishing punishment log when no log channels are set."""
+
+        await moderation_cog.publish_punishment_log(PunishmentType.BAN, entry)
+
+        # No messages sent in log channels
+        assert len(modlog_channel.messages) == 0
+        assert len(modlog_staff_channel.messages) == 0
+
+        # Should not create punishment record
+        punishments = await StaffPunishment.all()
+        assert len(punishments) == 0
+
+    async def test_publish_punishment_log_no_channels_configured(
+        self, moderation_cog, ctx, entry, modlog_channel, modlog_staff_channel
+    ):
+        """Test publishing punishment log when no log channels are configured."""
+        await GuildData.create(prefix="&", guild_id=ctx.guild.id)
+        await moderation_cog.publish_punishment_log(PunishmentType.BAN, entry)
+
+        # No messages sent in log channels
+        assert len(modlog_channel.messages) == 0
+        assert len(modlog_staff_channel.messages) == 0
+
+        # Should not create punishment record
+        punishments = await StaffPunishment.all()
+        assert len(punishments) == 0
+
+    async def test_publish_punishment_log_only_public_channel(
+        self, moderation_cog, ctx, entry, modlog_channel, modlog_staff_channel
+    ):
+        """Test publishing punishment log to public channel only."""
+        await GuildData.create(prefix="&", guild_id=ctx.guild.id, modlog_id=modlog_channel.id)
+        await moderation_cog.publish_punishment_log(PunishmentType.BAN, entry)
+
+        # Should send message to public channel only
+        assert len(modlog_channel.messages) == 1
+        assert len(modlog_staff_channel.messages) == 0
+
+        # Should create punishment record with message ID
+        punishments = await StaffPunishment.all()
+        assert len(punishments) == 1
+        punishment = punishments[0]
+        assert punishment.message_id == modlog_channel.messages[0].id
+
+    async def test_publish_punishment_log_only_public_channel_redacted(
+        self, moderation_cog, ctx, entry, modlog_channel, modlog_staff_channel
+    ):
+        """Test publishing punishment log to public channel only with redacted reason."""
+        await GuildData.create(prefix="&", guild_id=ctx.guild.id, modlog_id=modlog_channel.id)
+        entry.reason += " -redact"
+        await moderation_cog.publish_punishment_log(PunishmentType.BAN, entry)
+
+        # Should send message to public channel only
+        assert len(modlog_channel.messages) == 1
+        assert len(modlog_staff_channel.messages) == 0
+
+        # Should create punishment record with message ID
+        punishments = await StaffPunishment.all()
+        assert len(punishments) == 1
+        punishment = punishments[0]
+        assert punishment.message_id == modlog_channel.messages[0].id
+
+        # Check that user details are redacted in public log
+        public_message = modlog_channel.messages[0]
+        assert "TestUser" not in public_message.content
+        assert str(entry.target.id) not in public_message.content
+
+    async def test_publish_punishment_log_only_staff_channel(
+        self, moderation_cog, ctx, entry, modlog_channel, modlog_staff_channel
+    ):
+        """Test publishing punishment log to staff channel only."""
+        await GuildData.create(
+            prefix="&", guild_id=ctx.guild.id, modlog_staff_id=modlog_staff_channel.id
+        )
+        await moderation_cog.publish_punishment_log(PunishmentType.KICK, entry)
+
+        # Should send message to staff channel only
+        assert len(modlog_channel.messages) == 0
+        assert len(modlog_staff_channel.messages) == 1
+
+        # Should create punishment record with message ID
+        punishments = await StaffPunishment.all()
+        assert len(punishments) == 1
+        punishment = punishments[0]
+        assert punishment.message_staff_id == modlog_staff_channel.messages[0].id
+
+    async def test_publish_punishment_log_only_staff_channel_redacted(
+        self, moderation_cog, ctx, entry, modlog_channel, modlog_staff_channel
+    ):
+        """Test publishing punishment log to staff channel only with redacted reason."""
+        await GuildData.create(
+            prefix="&", guild_id=ctx.guild.id, modlog_staff_id=modlog_staff_channel.id
+        )
+        entry.reason += " -redact"
+        await moderation_cog.publish_punishment_log(PunishmentType.KICK, entry)
+
+        # Should send message to staff channel only
+        assert len(modlog_channel.messages) == 0
+        assert len(modlog_staff_channel.messages) == 1
+
+        # Should create punishment record with message ID
+        punishments = await StaffPunishment.all()
+        assert len(punishments) == 1
+        punishment = punishments[0]
+        assert punishment.message_staff_id == modlog_staff_channel.messages[0].id
+
+        # Check that user details are not redacted in staff log
+        staff_message = modlog_staff_channel.messages[0]
+        assert "TestUser" in staff_message.content
+        assert str(entry.target.id) in staff_message.content
+
+    async def test_publish_punishment_log_both_channels(
+        self, moderation_cog, ctx, entry, modlog_channel, modlog_staff_channel
+    ):
+        """Test publishing punishment log to both channels."""
+        await GuildData.create(
+            prefix="&",
+            guild_id=ctx.guild.id,
+            modlog_id=modlog_channel.id,
+            modlog_staff_id=modlog_staff_channel.id,
+        )
+        await moderation_cog.publish_punishment_log(PunishmentType.KICK, entry)
+
+        # Should send to both channels
+        assert len(modlog_channel.messages) == 1
+        assert len(modlog_staff_channel.messages) == 1
+        assert modlog_channel.messages[0].content == modlog_staff_channel.messages[0].content
+
+        # Should create punishment record with both message IDs
+        punishments = await StaffPunishment.all()
+        assert len(punishments) == 1
+        punishment = punishments[0]
+        assert punishment.message_id == modlog_channel.messages[0].id
+        assert punishment.message_staff_id == modlog_staff_channel.messages[0].id
+
+    async def test_publish_punishment_log_both_channels_redacted(
+        self, moderation_cog, ctx, entry, modlog_channel, modlog_staff_channel
+    ):
+        """Test publishing punishment log to both channels with redacted reason."""
+        await GuildData.create(
+            prefix="&",
+            guild_id=ctx.guild.id,
+            modlog_id=modlog_channel.id,
+            modlog_staff_id=modlog_staff_channel.id,
+        )
+        entry.reason += " -redact"
+        await moderation_cog.publish_punishment_log(PunishmentType.KICK, entry)
+
+        # Should send to both channels
+        assert len(modlog_channel.messages) == 1
+        assert len(modlog_staff_channel.messages) == 1
+
+        # Should create punishment record with both message IDs
+        punishments = await StaffPunishment.all()
+        assert len(punishments) == 1
+        punishment = punishments[0]
+        assert punishment.message_id == modlog_channel.messages[0].id
+        assert punishment.message_staff_id == modlog_staff_channel.messages[0].id
+
+        # Check that user details are redacted in public log
+        public_message = modlog_channel.messages[0]
+        assert "TestUser" not in public_message.content
+        assert str(entry.target.id) not in public_message.content
+
+        # Check that user details are not redacted in staff log
+        staff_message = modlog_staff_channel.messages[0]
+        assert "TestUser" in staff_message.content
+        assert str(entry.target.id) in staff_message.content
+
+    async def test_publish_revocation_log_no_guild_data(
+        self, moderation_cog, entry, modlog_channel, modlog_staff_channel
+    ):
+        """Test publishing revocation log when no guild data exists."""
+        await moderation_cog.publish_revocation_log(PunishmentType.BAN, entry)
+
+        # Should not send any messages
+        assert len(modlog_channel.messages) == 0
+        assert len(modlog_staff_channel.messages) == 0
+
+    async def test_publish_revocation_log_no_channels_configured(
+        self, moderation_cog, ctx, entry, modlog_channel, modlog_staff_channel
+    ):
+        """Test publishing revocation log when no log channels are configured."""
+        await GuildData.create(prefix="&", guild_id=ctx.guild.id)
+        await moderation_cog.publish_revocation_log(PunishmentType.BAN, entry)
+
+        # Should not send any messages
+        assert len(modlog_channel.messages) == 0
+        assert len(modlog_staff_channel.messages) == 0
+
+    async def test_publish_revocation_log_only_public_channel(
+        self, moderation_cog, ctx, entry, modlog_channel, modlog_staff_channel
+    ):
+        """Test publishing revocation log to public channel only."""
+        await GuildData.create(prefix="&", guild_id=ctx.guild.id, modlog_id=modlog_channel.id)
+        await moderation_cog.publish_revocation_log(PunishmentType.BAN, entry)
+
+        # Should send message to public channel only
+        assert len(modlog_channel.messages) == 1
+        assert len(modlog_staff_channel.messages) == 0
+
+    async def test_publish_revocation_log_only_staff_channel(
+        self, moderation_cog, ctx, entry, modlog_channel, modlog_staff_channel
+    ):
+        """Test publishing revocation log to staff channel only."""
+        await GuildData.create(
+            prefix="&", guild_id=ctx.guild.id, modlog_staff_id=modlog_staff_channel.id
+        )
+        await moderation_cog.publish_revocation_log(PunishmentType.MUTE, entry)
+
+        # Should send message to staff channel only
+        assert len(modlog_channel.messages) == 0
+        assert len(modlog_staff_channel.messages) == 1
+
+    async def test_publish_revocation_log_both_channels(
+        self, moderation_cog, ctx, entry, modlog_channel, modlog_staff_channel
+    ):
+        """Test publishing revocation log to both channels."""
+        await GuildData.create(
+            prefix="&",
+            guild_id=ctx.guild.id,
+            modlog_id=modlog_channel.id,
+            modlog_staff_id=modlog_staff_channel.id,
+        )
+        await moderation_cog.publish_revocation_log(PunishmentType.BAN, entry)
+
+        # Should send to both channels
+        assert len(modlog_channel.messages) == 1
+        assert len(modlog_staff_channel.messages) == 1
+        assert modlog_channel.messages[0].content == modlog_staff_channel.messages[0].content
+
+
+@scenario_class
+@cleanup_tables(GuildData)
+class TestMessageLogs:
+    """Tests for logging of message edits and deletions in logs channel."""
+
+    @scenario_fixture(["user", "message", "logs_channel"])
+    async def message_log_setup(self, moderation_cog, ctx):
+        logs_channel = MockChannel(id=12345, guild=ctx.guild)
+        user = MockUser(id=111111111, name="TestUser")
+        message = MockMessage(id=1000000000, content="message content", channel=ctx.channel)
+        message.author = user
+        message.guild = ctx.guild
+        ctx.guild.channels = [logs_channel, ctx.channel]
+        moderation_cog.bot.guilds = [ctx.guild]
+        return locals()
+
+    @staticmethod
+    def check_edited_log_message(log_message, user, before_message, after_message):
+        assert log_message.embed is not None
+        embed_text = str(log_message.embed.to_dict())
+        assert "edited a message" in embed_text
+        assert (
+            before_message.content if before_message.content else "(no content)" in embed_text
+        )
+        assert after_message.content if after_message.content else "(no content)" in embed_text
+        assert str(user.id) in embed_text
+        assert after_message.jump_url in embed_text
+
+    @staticmethod
+    def check_deleted_log_message(log_message, user, deleted_message):
+        assert log_message.embed is not None
+        embed_text = str(log_message.embed.to_dict())
+        assert "deleted a message" in embed_text
+        assert (
+            deleted_message.content
+            if deleted_message.content
+            else "(no content)" in embed_text
+        )
+        assert str(user.id) in embed_text
+        assert deleted_message.jump_url in embed_text
+
+    async def test_message_edit_no_guild_data(
+        self, moderation_cog, ctx, user, message, logs_channel
+    ):
+        """Test message edit logging when no guild data exists."""
+        edited = MockMessage(id=1000000000, content="edited content", channel=ctx.channel)
+        edited.author = user
+        edited.guild = ctx.guild
+
+        await moderation_cog.on_message_edit(message, edited)
+
+        # Should not log anything
+        assert len(logs_channel.messages) == 0
+
+    async def test_message_edit_no_logs_channel_configured(
+        self, moderation_cog, ctx, user, message, logs_channel
+    ):
+        """Test message edit logging when no logs channel is configured."""
+        await GuildData.create(prefix="&", guild_id=ctx.guild.id)
+        edited = MockMessage(id=1000000000, content="edited content", channel=ctx.channel)
+        edited.author = user
+        edited.guild = ctx.guild
+
+        await moderation_cog.on_message_edit(message, edited)
+
+        # Should not log anything
+        assert len(logs_channel.messages) == 0
+
+    async def test_message_edit_ignores_bot_messages(
+        self, moderation_cog, ctx, user, message, logs_channel
+    ):
+        """Test that bot message edits are ignored."""
+        await GuildData.create(prefix="&", guild_id=ctx.guild.id, logs_id=logs_channel.id)
+        edited = MockMessage(id=1000000000, content="edited content", channel=ctx.channel)
+        edited.author = user
+        edited.guild = ctx.guild
+        user.bot = True
+
+        await moderation_cog.on_message_edit(message, edited)
+
+        # Should not log bot messages
+        assert len(logs_channel.messages) == 0
+
+    async def test_message_edit_with_content(
+        self, moderation_cog, ctx, user, message, logs_channel
+    ):
+        """Test logging message edit with both before and after content."""
+        await GuildData.create(prefix="&", guild_id=ctx.guild.id, logs_id=logs_channel.id)
+        edited = MockMessage(id=1000000000, content="edited content", channel=ctx.channel)
+        edited.author = user
+        edited.guild = ctx.guild
+
+        await moderation_cog.on_message_edit(message, edited)
+
+        # Should log the edit
+        assert len(logs_channel.messages) == 1
+        self.check_edited_log_message(logs_channel.messages[0], user, message, edited)
+
+    async def test_message_edit_no_content_before(
+        self, moderation_cog, ctx, logs_channel, user, message
+    ):
+        """Test logging message edit when before content is empty (e.g., embed only)."""
+        await GuildData.create(prefix="&", guild_id=ctx.guild.id, logs_id=logs_channel.id)
+
+        before = MockMessage(id=message.id, content="", channel=ctx.channel)
+        before.author = user
+        before.guild = ctx.guild
+        after = MockMessage(id=message.id, content="New content added", channel=ctx.channel)
+        after.author = user
+        after.guild = ctx.guild
+
+        await moderation_cog.on_message_edit(before, after)
+
+        # Should log the edit with "(no content)" for before
+        assert len(logs_channel.messages) == 1
+        self.check_edited_log_message(logs_channel.messages[0], user, before, after)
+
+    async def test_message_delete_no_guild_data(self, moderation_cog, message, logs_channel):
+        """Test message delete logging when no guild data exists."""
+        await moderation_cog.on_message_delete(message)
+
+        # Should not log anything
+        assert len(logs_channel.messages) == 0
+
+    async def test_message_delete_no_logs_channel_configured(
+        self, moderation_cog, ctx, message, logs_channel
+    ):
+        """Test message delete logging when no logs channel is configured."""
+        await GuildData.create(prefix="&", guild_id=ctx.guild.id)
+        await moderation_cog.on_message_delete(message)
+
+        # Should not log anything
+        assert len(logs_channel.messages) == 0
+
+    async def test_message_delete_ignores_bot_messages(
+        self, moderation_cog, ctx, user, message, logs_channel
+    ):
+        """Test that bot message deletions are ignored."""
+        await GuildData.create(prefix="&", guild_id=ctx.guild.id, logs_id=logs_channel.id)
+        user.bot = True
+        await moderation_cog.on_message_delete(message)
+
+        # Should not log bot messages
+        assert len(logs_channel.messages) == 0
+
+    async def test_message_delete_with_content(
+        self, moderation_cog, ctx, user, message, logs_channel
+    ):
+        """Test logging message deletion with content."""
+        await GuildData.create(prefix="&", guild_id=ctx.guild.id, logs_id=logs_channel.id)
+        await moderation_cog.on_message_delete(message)
+
+        # Should log the deletion
+        assert len(logs_channel.messages) == 1
+        self.check_deleted_log_message(logs_channel.messages[0], user, message)
+
+    async def test_message_delete_no_content(
+        self, moderation_cog, ctx, user, message, logs_channel
+    ):
+        """Test logging message deletion when content is empty (e.g., embed only)."""
+        await GuildData.create(prefix="&", guild_id=ctx.guild.id, logs_id=logs_channel.id)
+        await moderation_cog.on_message_delete(message)
+
+        # Should log the deletion
+        assert len(logs_channel.messages) == 1
+        self.check_deleted_log_message(logs_channel.messages[0], user, message)
+
+
+@scenario_class
 @cleanup_tables(MemberRole)
 class TestStickyRoles:
     """Tests for sticky roles functionality."""

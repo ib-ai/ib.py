@@ -56,12 +56,12 @@ GUILD_CONFIGURATION_DATA = {
         'dataname': 'helper_id',
         'desc': 'Set a helper role.'
     },
-    'messagemonitor': {
+    'usermonitor': {
         'datatype': 'TextChannel',
         'dataname': 'monitor_user_log_id',
         'desc': 'Set a message monitoring log channel.'
     },
-    'usermonitor': {
+    'messagemonitor': {
         'datatype': 'TextChannel',
         'dataname': 'monitor_message_log_id',
         'desc': 'Set a user monitoring log channel.'
@@ -87,7 +87,7 @@ GUILD_CONFIGURATION_TOGGLES = {
 }
 
 
-class SetGuildData(commands.Cog, name='Guild Settings'):
+class GuildConfig(commands.Cog, name='Guild Settings'):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
@@ -116,7 +116,7 @@ class SetGuildData(commands.Cog, name='Guild Settings'):
             await ctx.send("No guild data set for this guild.")
             return
 
-        data = []
+        data = ["**prefix**: " + (guild_data.prefix or config.prefix)]
         for name, field in GUILD_CONFIGURATION_DATA.items():
             value = getattr(guild_data, field['dataname'])
             output = f"**{name}**: " + (f"<{MENTION_STYLES[field['datatype']]}{value}> (ID: {value})" if value else "Not set.")
@@ -175,11 +175,11 @@ class SetGuildData(commands.Cog, name='Guild Settings'):
         """
         Set a custom bot prefix for this guild.
         """
-        prefix = prefix or config.prefix
         values = {'prefix': prefix}
         await GuildData.update_or_create(values, guild_id = ctx.guild.id)
         get_guild_data.cache_clear()
 
+        prefix = prefix or config.prefix
         await ctx.send(f'`prefix` set to `{prefix}` for this guild.')
 
 
@@ -208,4 +208,4 @@ class SetGuildData(commands.Cog, name='Guild Settings'):
 
 
 async def setup(bot: commands.Bot):
-    await bot.add_cog(SetGuildData(bot))
+    await bot.add_cog(GuildConfig(bot))

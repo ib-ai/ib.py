@@ -19,7 +19,7 @@ INITIAL_COGS = (
     "dev",
     "embeds",
     "filter",
-    "guilddata",
+    "guildconfig",
     # "help",
     "helper",
     "moderation",

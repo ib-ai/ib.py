@@ -37,7 +37,9 @@ class MockChannel:
         self._message_counter = 1000000000
 
     async def send(self, content=None, embed=None):
-        message = MockMessage(id=self._message_counter, content=content or "", channel=self)
+        message = MockMessage(
+            id=self._message_counter, content=content or "", channel=self, embed=embed
+        )
         self._message_counter += 1
         self.messages.append(message)
         return message
