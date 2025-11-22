@@ -1,14 +1,13 @@
-import os
 from async_lru import alru_cache
 
+from ..config import IBPyConfig
 from .models import (
     GuildData,
     StaffFilter,
     StaffMonitorMessage,
     StaffMonitorUser,
-    StaffTag
+    StaffTag,
 )
-from ..config import IBPyConfig
 
 config = IBPyConfig()
 

@@ -103,7 +103,7 @@ class TestTagsCog(unittest.IsolatedAsyncioTestCase):
         self.ctx.send.assert_awaited_once_with(
             f"Tag `{trigger}` does not exist."
         )
-    
+
     @patch("ib_py.cogs.tags.available_subcommands", new_callable=AsyncMock)
     async def test_tag_invokes_available_subcommands(self, mock_available_subcommands):
         # Act
