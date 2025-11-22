@@ -1,18 +1,32 @@
+import os
 from async_lru import alru_cache
 
-from .models import (GuildData, StaffFilter, StaffMonitorMessage,
-                     StaffMonitorUser, StaffTag)
+from .models import (
+    GuildData,
+    StaffFilter,
+    StaffMonitorMessage,
+    StaffMonitorUser,
+    StaffTag
+)
+from ..config import IBPyConfig
+
+config = IBPyConfig()
+
+def cache(func):
+    if config.testing_env:
+        func.cache_clear = lambda: None
+        return func
+    return alru_cache(func)
 
 
 def model_cache_factory(Model):
-    @alru_cache
+    @cache
     async def model_cache() -> list[Model]:
         return await Model.all()
-
     return model_cache
 
 
-@alru_cache
+@cache
 async def get_guild_data(guild_id: int) -> GuildData:
     return (await GuildData.get_or_create(guild_id=guild_id))[0]
 
