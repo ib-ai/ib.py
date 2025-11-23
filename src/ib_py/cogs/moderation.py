@@ -117,6 +117,32 @@ class Moderation(commands.Cog):
             updated_sticky_roles.append(role_id)
         self.sticky_role_ids = updated_sticky_roles
 
+        # apply any mutes to users that may have rejoined while bot was offline
+        active_mutes = await StaffPunishment.filter(
+            punishment_type=PunishmentType.MUTE, expiry_complete=False
+        ).all()
+        for punishment in active_mutes:
+            guild = self.bot.get_guild(punishment.guild_id)
+            if not guild:
+                continue
+
+            member = guild.get_member(punishment.user_id)
+            if not member:
+                continue
+
+            guild_data = await get_guild_data(guild_id=punishment.guild_id)
+            if not guild_data or not guild_data.mute_id:
+                continue
+
+            mute_role = guild.get_role(guild_data.mute_id)
+            if mute_role in member.roles:
+                continue  # mute still active
+
+            await member.add_roles(mute_role, reason="Reapplying active mute.")
+            task = asyncio.create_task(self.handle_punishment_expiration(punishment))
+            self.active[punishment.punishment_id] = task
+            task.add_done_callback(self.removal_callback(punishment.punishment_id))
+
     async def handle_punishment_expiration(self, punishment: StaffPunishment):
         await long_sleep_until(punishment.expiry)
 

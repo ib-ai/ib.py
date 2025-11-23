@@ -1126,6 +1126,8 @@ class TestExpire:
         # Verify punishment expiration is queued
         assert punishment.punishment_id in moderation_cog.active
 
+    # testing startup behavior here, not necessarily the expire command itself
+
     @pytest.mark.parametrize(
         "punishment_type",
         [PunishmentType.MUTE, PunishmentType.BAN],
@@ -1173,6 +1175,33 @@ class TestExpire:
         await moderation_cog.schedule_existing_punishment_expirations()
 
         assert punishment.punishment_id in moderation_cog.active
+
+    async def test_reapply_mutes_on_startup(self, moderation_cog, ctx):
+        """Test active mutes are reapplied on startup to muted users without mute role."""
+        moderation_cog.bot.guilds = [ctx.guild]
+        mute_role = MockRole(id=55555, name="Muted", guild=ctx.guild)
+        member = MockMember(id=111111111, name="MutedUser", guild=ctx.guild, roles=[])
+        ctx.guild.roles = [mute_role]
+        ctx.guild.members = [member]
+        await GuildData.create(
+            guild_id=ctx.guild.id,
+            mute_id=mute_role.id,
+        )
+        mute_punishment = await StaffPunishment.create(
+            punishment_type=PunishmentType.MUTE,
+            guild_id=ctx.guild.id,
+            user_display=member.name,
+            user_id=member.id,
+            staff_display="Moderator",
+            staff_id=999999999,
+            reason="active mute",
+            expiry=timezone.now() + timedelta(hours=1),
+            expiry_complete=False,
+        )
+        await moderation_cog.on_ready()
+
+        assert mute_role in member.roles
+        assert mute_punishment.punishment_id in moderation_cog.active
 
 
 @scenario_class
