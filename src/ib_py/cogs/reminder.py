@@ -21,11 +21,11 @@ class Reminder(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.active: Mapping[int, asyncio.Task] = {}
-    
+
     async def cog_load(self) -> None:
         if not self.bot.is_ready():
             return
-        
+
         await self.schedule_existing_reminders()
 
     async def handle_reminder(self, user: discord.User, reminder: MemberReminder):
@@ -74,8 +74,12 @@ class Reminder(commands.Cog):
                 if reminder.reminder_id in self.active:
                     logger.debug("Reminder already active. (skipping)")
                     continue
-                user = self.bot.get_user(reminder.user_id) or await self.bot.fetch_user(reminder.user_id)
-                user = self.bot.get_user(reminder.user_id) or await self.bot.fetch_user(reminder.user_id)
+                user = self.bot.get_user(reminder.user_id) or await self.bot.fetch_user(
+                    reminder.user_id
+                )
+                user = self.bot.get_user(reminder.user_id) or await self.bot.fetch_user(
+                    reminder.user_id
+                )
                 if not user:
                     logger.warning(f"User {reminder.user_id} not found. (skipping)")
                     continue
@@ -89,7 +93,7 @@ class Reminder(commands.Cog):
                     task.add_done_callback(self.removal_callback(reminder.reminder_id))
                     logger.debug(f"Active timer running: id={reminder.reminder_id}")
             logger.debug(f"Active reminders: {len(self.active)}")
-    
+
     @commands.Cog.listener()
     async def on_ready(self):
         await self.schedule_existing_reminders()

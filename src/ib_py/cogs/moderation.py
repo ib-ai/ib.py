@@ -551,7 +551,7 @@ class Moderation(commands.Cog):
         # check for role update
         if set(before.roles) == set(after.roles):
             return
-        
+
         # if bot gets roles updated, handle separately
         if after.id == self.bot.user.id:
             await self.update_sticky_roles()
