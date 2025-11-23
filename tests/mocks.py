@@ -182,6 +182,7 @@ class MockBot:
     def __init__(self):
         self.users = {}
         self.guilds = []
+        self.user = MockUser(id=1234567890, name="MockBot", bot=True)
 
     def get_user(self, user_id):
         return self.users.get(user_id)

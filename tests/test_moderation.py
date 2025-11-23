@@ -5,7 +5,9 @@ import discord
 import pytest
 from tortoise import timezone
 
+from ib_py.cogs.dev import Dev
 from ib_py.cogs.moderation import Moderation, punishment_format, revocation_format
+from ib_py.config import IBPyConfig
 from ib_py.db.models import (
     GuildData,
     MemberRole,
@@ -17,7 +19,6 @@ from ib_py.db.models import (
 from .db import cleanup_tables
 from .mocks import (
     MockAuditLogEntry,
-    MockBot,
     MockChannel,
     MockGuild,
     MockMember,
@@ -29,11 +30,18 @@ from .mocks import (
 from .scenarios import scenario_class, scenario_fixture
 from .utils import patch_cog_commands
 
+config = IBPyConfig()
+
 
 @pytest.fixture
-def moderation_cog():
-    bot = MockBot()
+def moderation_cog(bot):
     cog = Moderation(bot)
+    return patch_cog_commands(cog)
+
+
+@pytest.fixture
+def dev_cog(bot):
+    cog = Dev(bot)
     return patch_cog_commands(cog)
 
 
@@ -778,21 +786,28 @@ class TestMessageLogs:
 class TestStickyRoles:
     """Tests for sticky roles functionality."""
 
-    @scenario_fixture(["guild", "member", "above_bot_role", "sticky_role", "non_sticky_role"])
+    @scenario_fixture(
+        ["guild", "member", "bot_member", "above_bot_role", "sticky_role", "non_sticky_role"]
+    )
     async def sticky_roles_setup(self, moderation_cog):
         guild = MockGuild()
         above_bot_role = MockRole(id=99999, name="AboveBot", position=4, guild=guild)
         bot_role = MockRole(id=88888, name="BotRole", position=3, guild=guild)
         sticky_role = MockRole(id=11111, name="StickyRole", position=2, guild=guild)
         non_sticky_role = MockRole(id=22222, name="NonStickyRole", position=1, guild=guild)
-        bot_member = MockMember(id=222222222, name="TestBot", guild=guild, roles=[bot_role])
+        bot_member = MockMember(
+            id=moderation_cog.bot.user.id,
+            name=moderation_cog.bot.user.name,
+            guild=guild,
+            roles=[bot_role],
+        )
         member = MockMember(id=111111111, name="TestUser", guild=guild, roles=[])
 
         guild.roles = [above_bot_role, sticky_role, bot_role, non_sticky_role]
         guild.me = bot_member
-
-        moderation_cog.sticky_role_ids = [sticky_role.id, above_bot_role.id]
         moderation_cog.bot.guilds = [guild]
+
+        config.sticky_roles = [sticky_role.id, above_bot_role.id]
         await moderation_cog.on_ready()
 
         return locals()
@@ -978,6 +993,28 @@ class TestStickyRoles:
         assert sticky_roles is not None
         assert sticky_role.id in sticky_roles.role_ids
 
+    async def test_member_update_above_above_bot_role(
+        self, moderation_cog, guild, member, bot_member, sticky_role, above_bot_role
+    ):
+        """Test member getting a sticky roles added with bot's permissions are updated via role hierarchy."""
+        above_above_bot_role = MockRole(
+            id=100000, name="AboveAboveBot", position=5, guild=member.guild
+        )
+        guild.roles.append(above_above_bot_role)
+        after_bot_member = MockMember(
+            id=bot_member.id,
+            name=bot_member.name,
+            guild=member.guild,
+            roles=bot_member.roles + [above_above_bot_role],
+        )
+        guild.me = after_bot_member
+        await moderation_cog.on_member_update(
+            bot_member, after_bot_member
+        )  # Trigger permission recalculation
+
+        # Check sticky role addition in cog
+        assert above_bot_role.id in moderation_cog.sticky_role_ids
+
 
 @scenario_class
 @cleanup_tables(StaffPunishment, GuildData)
@@ -1126,14 +1163,14 @@ class TestExpire:
         # Verify punishment expiration is queued
         assert punishment.punishment_id in moderation_cog.active
 
-    # testing startup behavior here, not necessarily the expire command itself
+    # testing startup/reload behavior here, not necessarily the expire command itself
 
     @pytest.mark.parametrize(
         "punishment_type",
         [PunishmentType.MUTE, PunishmentType.BAN],
         ids=["mute", "ban"],
     )
-    async def test_expire_existing_punishment_future_date(
+    async def test_expire_existing_punishment_future_date_on_startup(
         self, moderation_cog, ctx, user, punishment_type
     ):
         """Test scheduling of expiration on punishment with a future date."""
@@ -1148,7 +1185,7 @@ class TestExpire:
             expiry=timezone.now() + timedelta(days=1),
             expiry_complete=False,
         )
-        await moderation_cog.schedule_existing_punishment_expirations()
+        await moderation_cog.on_ready()
 
         assert punishment.punishment_id in moderation_cog.active
 
@@ -1157,7 +1194,7 @@ class TestExpire:
         [PunishmentType.MUTE, PunishmentType.BAN],
         ids=["mute", "ban"],
     )
-    async def test_expire_existing_punishment_past_date(
+    async def test_expire_existing_punishment_past_date_on_startup(
         self, moderation_cog, ctx, user, punishment_type
     ):
         """Test scheduling of expiration on punishment with a past date."""
@@ -1172,7 +1209,7 @@ class TestExpire:
             expiry=timezone.now() - timedelta(days=1),
             expiry_complete=False,
         )
-        await moderation_cog.schedule_existing_punishment_expirations()
+        await moderation_cog.on_ready()
 
         assert punishment.punishment_id in moderation_cog.active
 

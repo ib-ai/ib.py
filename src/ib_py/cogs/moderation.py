@@ -92,56 +92,15 @@ class Moderation(commands.Cog):
         self.active = {}
         self.incomplete_unmutes = {}
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        # update sticky roles if above bot role in hierarchy
-        updated_sticky_roles = []
-        for role_id in self.sticky_role_ids:
-            for guild in self.bot.guilds:
-                role = discord.utils.get(guild.roles, id=role_id)
-                if role:
-                    break
-            else:
-                logger.warning(f"Sticky role with ID {role_id} not found in any guild.")
-                continue
+    async def cog_load(self) -> None:
+        if not self.bot.is_ready():
+            return
 
-            bot_top_role = guild.me.top_role
-            if role.position >= bot_top_role.position:
-                logger.warning(
-                    f'Sticky role "{role.name}" in guild "{guild.name}" '
-                    f"is above or equal to the bot's top role in the hierarchy; "
-                    f"role will not be sticky."
-                )
-                continue
-
-            updated_sticky_roles.append(role_id)
-        self.sticky_role_ids = updated_sticky_roles
-
-        # apply any mutes to users that may have rejoined while bot was offline
-        active_mutes = await StaffPunishment.filter(
-            punishment_type=PunishmentType.MUTE, expiry_complete=False
-        ).all()
-        for punishment in active_mutes:
-            guild = self.bot.get_guild(punishment.guild_id)
-            if not guild:
-                continue
-
-            member = guild.get_member(punishment.user_id)
-            if not member:
-                continue
-
-            guild_data = await get_guild_data(guild_id=punishment.guild_id)
-            if not guild_data or not guild_data.mute_id:
-                continue
-
-            mute_role = guild.get_role(guild_data.mute_id)
-            if mute_role in member.roles:
-                continue  # mute still active
-
-            await member.add_roles(mute_role, reason="Reapplying active mute.")
-            task = asyncio.create_task(self.handle_punishment_expiration(punishment))
-            self.active[punishment.punishment_id] = task
-            task.add_done_callback(self.removal_callback(punishment.punishment_id))
+        await self.update_sticky_roles()
+        await self.schedule_existing_punishment_expirations()
+        logger.info("Existing punishment expirations queued.")
+        await self.check_reapply_active_mutes()
+        logger.info("Active mutes checked.")
 
     async def handle_punishment_expiration(self, punishment: StaffPunishment):
         await long_sleep_until(punishment.expiry)
@@ -176,6 +135,29 @@ class Moderation(commands.Cog):
             del self.active[id]
 
         return callback
+
+    async def update_sticky_roles(self):
+        updated_sticky_roles = []
+        for role_id in config.sticky_roles:
+            for guild in self.bot.guilds:
+                role = discord.utils.get(guild.roles, id=role_id)
+                if role:
+                    break
+            else:
+                logger.warning(f"Sticky role with ID {role_id} not found in any guild.")
+                continue
+
+            bot_top_role = guild.me.top_role
+            if role.position >= bot_top_role.position:
+                logger.warning(
+                    f'Sticky role "{role.name}" in guild "{guild.name}" '
+                    f"is above or equal to the bot's top role in the hierarchy; "
+                    f"role will not be sticky."
+                )
+                continue
+
+            updated_sticky_roles.append(role_id)
+        self.sticky_role_ids = updated_sticky_roles
 
     async def schedule_existing_punishment_expirations(self):
         # address punishments that expired in the past while the bot was offline
@@ -223,6 +205,32 @@ class Moderation(commands.Cog):
                 task.add_done_callback(self.removal_callback(punishment.punishment_id))
                 logger.debug(f"Punishment expiration scheduled: id={punishment.punishment_id}")
             logger.debug(f"Total punishment expirations scheduled: {len(self.active)}")
+
+    async def check_reapply_active_mutes(self):
+        active_mutes = await StaffPunishment.filter(
+            punishment_type=PunishmentType.MUTE, expiry_complete=False
+        ).all()
+        for punishment in active_mutes:
+            guild = self.bot.get_guild(punishment.guild_id)
+            if not guild:
+                continue
+
+            member = guild.get_member(punishment.user_id)
+            if not member:
+                continue
+
+            guild_data = await get_guild_data(guild_id=punishment.guild_id)
+            if not guild_data or not guild_data.mute_id:
+                continue
+
+            mute_role = guild.get_role(guild_data.mute_id)
+            if mute_role in member.roles:
+                continue  # mute still active
+
+            await member.add_roles(mute_role, reason="Reapplying active mute.")
+            task = asyncio.create_task(self.handle_punishment_expiration(punishment))
+            self.active[punishment.punishment_id] = task
+            task.add_done_callback(self.removal_callback(punishment.punishment_id))
 
     async def publish_punishment_log(
         self, punishment_type: PunishmentType, entry: discord.AuditLogEntry
@@ -319,6 +327,15 @@ class Moderation(commands.Cog):
             if end_token == flag:
                 return updated(reason)
         return reason, False
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        """Called when the bot is ready. Ensures initialization on bot startup."""
+        await self.update_sticky_roles()
+        await self.schedule_existing_punishment_expirations()
+        logger.info("Existing punishment expirations queued.")
+        await self.check_reapply_active_mutes()
+        logger.info("Active mutes checked.")
 
     @commands.Cog.listener()
     async def on_audit_log_entry_create(self, entry: discord.AuditLogEntry):
@@ -533,6 +550,11 @@ class Moderation(commands.Cog):
         """
         # check for role update
         if set(before.roles) == set(after.roles):
+            return
+        
+        # if bot gets roles updated, handle separately
+        if after.id == self.bot.user.id:
+            await self.update_sticky_roles()
             return
 
         member_roles = await MemberRole.get_or_none(guild_id=after.guild.id, user_id=after.id)
