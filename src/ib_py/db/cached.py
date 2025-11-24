@@ -12,7 +12,7 @@ from .models import (
 config = IBPyConfig()
 
 def cache(func):
-    if config.testing_env:
+    if getattr(config, "testing_env", False):
         func.cache_clear = lambda: None
         return func
     return alru_cache(func)

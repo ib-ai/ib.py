@@ -404,22 +404,22 @@ class Moderation(commands.Cog):
             await self.publish_punishment_log(PunishmentType.BAN, entry)
         elif entry.action == discord.AuditLogAction.unban:
             await self.publish_revocation_log(PunishmentType.BAN, entry)
-            if entry.user.bot:  # expiry
-                punishment = (
-                    await StaffPunishment.filter(
-                        user_id=entry.target.id,
-                        guild_id=entry.guild.id,
-                        punishment_type=PunishmentType.BAN,
-                        expiry__isnull=False,
-                    )
-                    .order_by("-timestamp")
-                    .first()
+            # update expirations
+            punishment = (
+                await StaffPunishment.filter(
+                    user_id=entry.target.id,
+                    guild_id=entry.guild.id,
+                    punishment_type=PunishmentType.BAN,
+                    expiry__isnull=False,
                 )
-                if not punishment:
-                    return  # no matching punishment found
+                .order_by("-timestamp")
+                .first()
+            )
+            if not punishment:
+                return  # no matching punishment found
 
-                punishment.expiry_complete = True
-                await punishment.save()
+            punishment.expiry_complete = True
+            await punishment.save()
         elif entry.action == discord.AuditLogAction.member_role_update:
             guild_data = await get_guild_data(guild_id=entry.guild.id)
             if not guild_data.mute_id:
@@ -590,7 +590,7 @@ class Moderation(commands.Cog):
         ctx: commands.Context,
         user: discord.User,
         *,
-        reason: Optional[str] = "No reason provided.",
+        reason: Optional[str] = None,
     ):
         """
         Blacklist a user that is not in the server.
@@ -781,17 +781,23 @@ class Moderation(commands.Cog):
         guild_data = await get_guild_data(guild_id=ctx.guild.id)
         modlog = self.bot.get_channel(guild_data.modlog_id)
         if modlog:
-            modlog_message = await modlog.fetch_message(punishment.message_id)
-            await modlog_message.edit(content=new_message)
+            try:
+                modlog_message = await modlog.fetch_message(punishment.message_id)
+                await modlog_message.edit(content=new_message)
+            except discord.NotFound:
+                pass  # message was deleted
 
         new_message = punishment_message(punishment, redact=False)
         guild_data = await get_guild_data(guild_id=ctx.guild.id)
         modlog_staff = self.bot.get_channel(guild_data.modlog_staff_id)
         if modlog_staff:
-            modlog_staff_message = await modlog_staff.fetch_message(
-                punishment.message_staff_id
-            )
-            await modlog_staff_message.edit(content=new_message)
+            try:
+                modlog_staff_message = await modlog_staff.fetch_message(
+                    punishment.message_staff_id
+                )
+                await modlog_staff_message.edit(content=new_message)
+            except discord.NotFound:
+                pass  # message was deleted
 
         await ctx.send(f'Case #{case_number} reason updated: "{reason}"')
 

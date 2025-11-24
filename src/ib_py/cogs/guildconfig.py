@@ -59,12 +59,12 @@ GUILD_CONFIGURATION_DATA = {
     'usermonitor': {
         'datatype': 'TextChannel',
         'dataname': 'monitor_user_log_id',
-        'desc': 'Set a message monitoring log channel.'
+        'desc': 'Set a user monitoring log channel.'
     },
     'messagemonitor': {
         'datatype': 'TextChannel',
         'dataname': 'monitor_message_log_id',
-        'desc': 'Set a user monitoring log channel.'
+        'desc': 'Set a message monitoring log channel.'
     },
 }
 GUILD_CONFIGURATION_TOGGLES = {
@@ -193,7 +193,7 @@ class GuildConfig(commands.Cog, name='Guild Settings'):
             values = {dataname: not getattr(guild_data, dataname) if guild_data else True for dataname in datanames}
             await GuildData.update_or_create(values, guild_id = ctx.guild.id)
             get_guild_data.cache_clear()
-            await ctx.send('\n'.join(f"`{dataname}` is {'`disabled`' if values[dataname] else '`enabled`'}" for dataname in datanames))
+            await ctx.send('\n'.join(f"`{dataname}` is {'`enabled`' if values[dataname] else '`disabled`'}" for dataname in datanames))
         return cmd
 
     @commands.group(invoke_without_command=True)
