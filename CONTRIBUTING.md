@@ -59,11 +59,22 @@ docker-compose -f docker-compose.postgres.yml up --build
 
 Once the bot is up and running, you are ready to start developing!
 
-6. Checking codestyle
+6. Enforcing codestyle
 
-Before you push changes, ensure that your code aligns with the codestyle for this project. To run [ruff](https://docs.astral.sh/ruff/) or [isort](https://pycqa.github.io/isort/index.html), use the following commands:
+This project uses [pre-commit](https://pre-commit.com/) to enforce codestyle with every commit.
+Codestyle is enforced with [isort](https://pycqa.github.io/isort/index.html) and [black](https://black.readthedocs.io/en/stable/) (and checked by [ruff](https://docs.astral.sh/ruff/)), along with other usual pre-commit hooks.
+See `.pre-commit-config.yaml` for all the details.
+
+Before you push changes, ensure that you [install pre-commit](https://pre-commit.com/#install) and run the `install` command in the root directory:
 
 ```
-uv run ruff check .
+pre-commit install
+```
+
+You can also run any of the codestyle checks or autoformatters on the codebase individually via `uv`:
+
+```
 uv run isort .
+uv run black .
+uv run ruff check .
 ```
