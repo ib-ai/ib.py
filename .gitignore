@@ -2,9 +2,6 @@ config.toml
 !example.env
 !src/**/config.toml
 
-# PDM files
-.pdm-python
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
