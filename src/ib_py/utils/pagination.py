@@ -58,9 +58,7 @@ def paginated_embed_menus(
         if "fields" in embed_dict:
             raise ValueError('embed_dict "fields" key must not be set.')
     else:
-        embed_dict = {  # default
-            "description": "Here is a list of entries."
-        }
+        embed_dict = {"description": "Here is a list of entries."}  # default
 
     if N == 0:
         embed_dict["description"] = empty_desc

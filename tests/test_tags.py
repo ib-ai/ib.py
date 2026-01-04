@@ -27,9 +27,7 @@ class TestTagsCog(unittest.IsolatedAsyncioTestCase):
         await self.cog.tag_create(self, self.ctx, trigger=trigger, output=output)
 
         # Check DB update call
-        mock_update_or_create.assert_awaited_once_with(
-            {"output": output}, trigger=trigger
-        )
+        mock_update_or_create.assert_awaited_once_with({"output": output}, trigger=trigger)
 
         # Check cache cleared
         mock_cache_clear.assert_called_once()
@@ -100,9 +98,7 @@ class TestTagsCog(unittest.IsolatedAsyncioTestCase):
         # Assert
         mock_filter.assert_called_once_with(trigger=trigger)
         mock_cache_clear.assert_not_called()
-        self.ctx.send.assert_awaited_once_with(
-            f"Tag `{trigger}` does not exist."
-        )
+        self.ctx.send.assert_awaited_once_with(f"Tag `{trigger}` does not exist.")
 
     @patch("ib_py.cogs.tags.available_subcommands", new_callable=AsyncMock)
     async def test_tag_invokes_available_subcommands(self, mock_available_subcommands):
@@ -115,7 +111,9 @@ class TestTagsCog(unittest.IsolatedAsyncioTestCase):
     @patch("ib_py.cogs.tags.paginated_embed_menus")
     @patch("ib_py.cogs.tags.PaginationView")
     @patch("ib_py.cogs.tags.get_all_tags", new_callable=AsyncMock)
-    async def test_tag_list(self, mock_get_all_tags, mock_pagination_view, mock_paginated_embed_menus):
+    async def test_tag_list(
+        self, mock_get_all_tags, mock_pagination_view, mock_paginated_embed_menus
+    ):
         # Setup mocks for tags returned by get_all_tags
         mock_get_all_tags.return_value = [
             MagicMock(trigger="tag1", output="output1", disabled=False),
@@ -127,7 +125,9 @@ class TestTagsCog(unittest.IsolatedAsyncioTestCase):
 
         # Setup PaginationView mock instance with async method
         pagination_instance = MagicMock()
-        pagination_instance.return_paginated_embed_view = AsyncMock(return_value=("tag_embed", "tag_view"))
+        pagination_instance.return_paginated_embed_view = AsyncMock(
+            return_value=("tag_embed", "tag_view")
+        )
 
         # When PaginationView(...) is called, return the mock instance
         mock_pagination_view.return_value = pagination_instance
@@ -137,6 +137,7 @@ class TestTagsCog(unittest.IsolatedAsyncioTestCase):
 
         # Assert ctx.send called with correct embed and view
         self.ctx.send.assert_awaited_once_with(embed="tag_embed", view="tag_view")
+
 
 if __name__ == "__main__":
     unittest.main()

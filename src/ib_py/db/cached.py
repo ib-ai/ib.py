@@ -11,6 +11,7 @@ from .models import (
 
 config = IBPyConfig()
 
+
 def cache(func):
     if getattr(config, "testing_env", False):
         func.cache_clear = lambda: None
@@ -22,6 +23,7 @@ def model_cache_factory(Model):
     @cache
     async def model_cache() -> list[Model]:
         return await Model.all()
+
     return model_cache
 
 
