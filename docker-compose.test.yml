@@ -1,0 +1,20 @@
+services:
+  test-db:
+    image: postgres:16-alpine
+    container_name: ib-py-test-db
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: test_ib_py
+    ports:
+      - "5433:5432"  # Use 5433 to avoid conflicts with dev database
+    volumes:
+      - test-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d test_ib_py"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  test-db-data:

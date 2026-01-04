@@ -8,7 +8,9 @@ from tortoise.models import Model
 
 
 class PunishmentType(str, enum.Enum):
+    WARN = "warn"
     KICK = "kick"
+    TIMEOUT = "timeout"
     MUTE = "mute"
     BAN = "ban"
     UNKNOWN = "unknown"
@@ -26,7 +28,7 @@ class GuildData(Model):
     class Meta:
         table = "guild_data"
 
-    guild_id = fields.BigIntField(pk=True, unique=True)
+    guild_id = fields.BigIntField(primary_key=True, unique=True)
     prefix = fields.CharField(max_length=1, null=True)
     modlog_id = fields.BigIntField(null=True)
     modlog_staff_id = fields.BigIntField(null=True)
@@ -48,7 +50,7 @@ class GuildSnapshot(Model):
     class Meta:
         table = "snapshot"
 
-    snapshot_id = fields.IntField(pk=True)
+    snapshot_id = fields.IntField(primary_key=True)
     category_id = fields.BigIntField()
     channel_type = fields.CharEnumField(ChannelType)
     channel_list = ArrayField()
@@ -58,7 +60,7 @@ class GuildCassowary(Model):
     class Meta:
         table = "cassowary"
 
-    cassowary_id = fields.IntField(pk=True)
+    cassowary_id = fields.IntField(primary_key=True)
     label = fields.CharField(max_length=256)
     penguin = fields.BooleanField(default=False)
 
@@ -67,7 +69,7 @@ class GuildCassowaryRoles(Model):
     class Meta:
         table = "cassowary_roles"
 
-    category_role_id = fields.BigIntField(pk=True)
+    category_role_id = fields.BigIntField(primary_key=True)
     role_id = fields.BigIntField()
     cassowary_id = fields.OneToOneField("models.GuildCassowary")
 
@@ -76,7 +78,7 @@ class GuildVoteLadder(Model):
     class Meta:
         table = "vote_ladder"
 
-    vote_ladder_id = fields.IntField(pk=True)
+    vote_ladder_id = fields.IntField(primary_key=True)
     vote_ladder_label = fields.CharField(max_length=256)
     vote_ladder_roles = ArrayField()
     channel_id = fields.BigIntField()
@@ -89,7 +91,7 @@ class GuildVote(Model):
     class Meta:
         table = "vote"
 
-    vote_id = fields.IntField(pk=True)
+    vote_id = fields.IntField(primary_key=True)
     message_id = fields.BigIntField()
     message = fields.TextField()
     positive = fields.IntField(default=0)
@@ -106,7 +108,7 @@ class StaffTag(Model):
     class Meta:
         table = "tag"
 
-    tag_id = fields.IntField(pk=True)
+    tag_id = fields.IntField(primary_key=True)
     trigger = fields.CharField(max_length=256)
     output = fields.CharField(max_length=1024)
     disabled = fields.BooleanField(default=False)
@@ -116,7 +118,7 @@ class StaffNote(Model):
     class Meta:
         table = "note"
 
-    note_id = fields.IntField(pk=True)
+    note_id = fields.IntField(primary_key=True)
     user_id = fields.BigIntField()
     author_id = fields.BigIntField()
     note = fields.CharField(max_length=1024)
@@ -127,7 +129,7 @@ class StaffMonitorUser(Model):
     class Meta:
         table = "monitor_user"
 
-    monitor_user_id = fields.IntField(pk=True)
+    monitor_user_id = fields.IntField(primary_key=True)
     user_id = fields.BigIntField()
 
 
@@ -135,7 +137,7 @@ class StaffMonitorMessageGroups(Model):
     class Meta:
         table = "monitor_message_groups"
 
-    group_id = fields.IntField(pk=True)
+    group_id = fields.IntField(primary_key=True)
     name = fields.CharField(max_length=256)
     disabled = fields.BooleanField(default=False)
     monitor_messages: fields.ManyToManyRelation["StaffMonitorMessage"] = (
@@ -147,7 +149,7 @@ class StaffMonitorMessage(Model):
     class Meta:
         table = "monitor_message"
 
-    monitor_message_id = fields.IntField(pk=True)
+    monitor_message_id = fields.IntField(primary_key=True)
     disabled = fields.BooleanField(default=False)
     message = fields.CharField(max_length=1000)
 
@@ -156,7 +158,7 @@ class StaffFilter(Model):
     class Meta:
         table = "filter"
 
-    filter_id = fields.IntField(pk=True)
+    filter_id = fields.IntField(primary_key=True)
     trigger = fields.CharField(max_length=1024)
     notify = fields.BooleanField(default=False)
 
@@ -165,7 +167,7 @@ class StaffReaction(Model):
     class Meta:
         table = "reaction"
 
-    reaction_id = fields.IntField(pk=True)
+    reaction_id = fields.IntField(primary_key=True)
     channel_id = fields.BigIntField()
     message_id = fields.BigIntField()
 
@@ -174,7 +176,7 @@ class StaffButtonRole(Model):
     class Meta:
         table = "buttonrole"
 
-    button_role_id = fields.IntField(pk=True)
+    button_role_id = fields.IntField(primary_key=True)
     emoji_id = fields.BigIntField()
     label = fields.CharField(max_length=256)
     role_ids = ArrayField()
@@ -185,17 +187,20 @@ class StaffPunishment(Model):
     class Meta:
         table = "punishment"
 
-    punishment_id = fields.IntField(pk=True)
+    punishment_id = fields.IntField(primary_key=True)
     punishment_type = fields.CharEnumField(PunishmentType)
+    guild_id = fields.BigIntField()
     user_display = fields.CharField(max_length=256)
     user_id = fields.BigIntField()
     staff_display = fields.CharField(max_length=256)
     staff_id = fields.BigIntField()
     reason = fields.CharField(max_length=1024)
     redacted = fields.BooleanField(default=False)
-    message_id = fields.BigIntField()
-    message_staff_id = fields.BigIntField()
+    message_id = fields.BigIntField(null=True)
+    message_staff_id = fields.BigIntField(null=True)
+    timestamp = fields.DatetimeField(auto_now_add=True)
     expiry = fields.DatetimeField(null=True)
+    expiry_complete = fields.BooleanField(default=True)
 
 
 # Helper Tables
@@ -205,7 +210,7 @@ class HelperMessage(Model):
     class Meta:
         table = "helper_message"
 
-    helper_message_id = fields.IntField(pk=True)
+    helper_message_id = fields.IntField(primary_key=True)
     channel_id = fields.BigIntField()
     message_id = fields.BigIntField()
     role_id = ArrayField(element_type="bigint")
@@ -218,15 +223,17 @@ class MemberRole(Model):
     class Meta:
         table = "member_role"
 
-    user_id = fields.BigIntField(pk=True)
-    role_ids = ArrayField()
+    sticky_role_id = fields.IntField(primary_key=True)
+    guild_id = fields.BigIntField()
+    user_id = fields.BigIntField()
+    role_ids = ArrayField(element_type="bigint", default=list)
 
 
 class MemberOpt(Model):
     class Meta:
         table = "member_opt"
 
-    opt_id = fields.IntField(pk=True)
+    opt_id = fields.IntField(primary_key=True)
     user_id = fields.BigIntField()
     channel_id = fields.BigIntField()
 
@@ -235,7 +242,7 @@ class MemberReminder(Model):
     class Meta:
         table = "member_reminder"
 
-    reminder_id = fields.IntField(pk=True)
+    reminder_id = fields.IntField(primary_key=True)
     user_id = fields.BigIntField()
     message = fields.CharField(max_length=1024)
     timestamp = fields.DatetimeField()

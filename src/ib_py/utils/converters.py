@@ -29,7 +29,7 @@ class DatetimeConverter(commands.Converter):
         now = timezone.now()
         now_timestamp = now.timestamp()
         try:
-            match = re.search("<t:([0-9]*)(?::.)?>", arg)
+            match = re.search(r"<t:([0-9]*)(?::.)?>", arg)
             if match is None:
                 timestamp = int(arg)
             else:
@@ -39,8 +39,8 @@ class DatetimeConverter(commands.Converter):
                     "Timestamp cannot correspond to a time in the past."
                 )
             return datetime.fromtimestamp(timestamp, tz=timezone.get_default_timezone())
-        except (ValueError, OSError, OverflowError):
-            logger.debug("Direct timestamp conversion failed.")
+        except (ValueError, OSError, OverflowError) as e:
+            logger.debug(f"Direct timestamp conversion failed: {e}")
 
         try:
             delta = parse_time(arg)
@@ -70,6 +70,6 @@ class ListConverter(commands.Converter):
             return "*"
 
         try:
-            return list(map(int, re.split("\s*[,;\s]\s*", argument)))
+            return list(map(int, re.split(r"\s*[,;\s]\s*", argument)))
         except ValueError:
             raise commands.BadArgument("The list provided is invalid.")

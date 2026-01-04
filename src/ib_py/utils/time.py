@@ -32,10 +32,10 @@ def parse_time(s: str) -> timedelta:
     """
     Convert short-hand duration time string into a python timedelta object.
     """
-    if not re.fullmatch("(?:\d+\D+)*", s):
+    if not re.fullmatch(r"(?:\d+\D+)*", s):
         raise ValueError()
     total_delta = timedelta()
-    for value, key in re.findall("(\d+)(\D+)", s):
+    for value, key in re.findall(r"(\d+)(\D+)", s):
         value = int(value)
         if key.startswith("y"):
             # python timedelta objects don't work with years

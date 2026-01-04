@@ -19,6 +19,7 @@ INITIAL_COGS = (
     "dev",
     "embeds",
     "filter",
+    "guildconfig",
     # "help",
     "helper",
     "moderation",
@@ -70,9 +71,6 @@ class IBpy(commands.Bot):
         logger.info(f'Bot "{bot_name}" is now connected.')
         logger.info(f"Currently serving {guild_number} guilds.")
         logger.info(f'Described as "{bot_description}".')
-
-        await self.get_cog("Reminder").schedule_existing_reminders()
-        logger.info("Existing reminders queued.")
 
     async def on_command_error(self, ctx: commands.Context, exception) -> None:
         # sends the error message as a discord message

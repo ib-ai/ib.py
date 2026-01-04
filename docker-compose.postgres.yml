@@ -1,5 +1,3 @@
-version: "3.4"
-
 services:
   # Can comment out the following when working in development instead of rerunning the docker environment again
 
