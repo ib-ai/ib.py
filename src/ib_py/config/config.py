@@ -7,15 +7,17 @@ from .reader import EnvReader, TomlReader
 
 class IBPyConfigError(Exception):
     """Custom exception for IBPyConfig errors."""
+
     pass
 
 
 class IBPyConfig:
     """Main configuration class for ib.py."""
+
     _instances = {}
 
     def __new__(cls, **kwargs):
-        """"
+        """ "
         Implements singleton-inspired pattern to ensure only one instance exists for each env/toml file pair.
         """
         env_file = kwargs.get("env_file", pathlib.Path(".env"))
@@ -26,18 +28,30 @@ class IBPyConfig:
             cls._instances[key] = instance
         return cls._instances[key]
 
-    def __init__(self, *, env_file: pathlib.Path = pathlib.Path(".env"), toml_file: pathlib.Path = pathlib.Path("config.toml")) -> None:
+    def __init__(
+        self,
+        *,
+        env_file: pathlib.Path = pathlib.Path(".env"),
+        toml_file: pathlib.Path = pathlib.Path("config.toml"),
+    ) -> None:
         if not env_file.exists():
-            warnings.warn(f"Environment file {env_file} does not exist. Proceeding without it.", UserWarning)
+            warnings.warn(
+                f"Environment file {env_file} does not exist. Proceeding without it.",
+                UserWarning,
+            )
         self.env_reader = EnvReader(env_file)
         try:
             self.toml_reader = TomlReader(toml_file)
         except FileNotFoundError as e:
-            parent = '.'.join(__name__.split('.')[:-1])  # get parent from package structure, needed for importlib.resources
-            with resources.path(parent, 'config.toml') as blank_toml_file:
-                with open(toml_file, 'w') as f_new, open(blank_toml_file, 'r') as f_blank:
+            parent = ".".join(
+                __name__.split(".")[:-1]
+            )  # get parent from package structure, needed for importlib.resources
+            with resources.path(parent, "config.toml") as blank_toml_file:
+                with open(toml_file, "w") as f_new, open(blank_toml_file, "r") as f_blank:
                     f_new.write(f_blank.read())
-            raise IBPyConfigError(f"TOML configuration file not found. A blank template has been created at {toml_file}. Please fill it out and restart the application.") from e
+            raise IBPyConfigError(
+                f"TOML configuration file not found. A blank template has been created at {toml_file}. Please fill it out and restart the application."
+            ) from e
 
     def __getattr__(self, name: str) -> str | None:
         """Get a configuration value from either the environment or the TOML file.
@@ -62,4 +76,6 @@ class IBPyConfig:
         """
         missing_keys = [key for key in keys if self.__getattr__(key) is None]
         if missing_keys:
-            raise IBPyConfigError(f"Missing required configuration keys: {', '.join(missing_keys)}")
+            raise IBPyConfigError(
+                f"Missing required configuration keys: {', '.join(missing_keys)}"
+            )
