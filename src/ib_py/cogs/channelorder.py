@@ -105,62 +105,61 @@ class ChannelOrder(commands.Cog):
     async def rollback(self, ctx: commands.Context, *, category_input: str):
         """
         Rollback channels in a category to the saved snapshot order.
+        Also restores channels that were moved out of the category.
         """
         guild = ctx.guild
         category = self.get_category(guild, category_input)
-        
+
         if not category:
             await ctx.reply("Invalid category ID or name.")
             return
 
-        # Fetch snapshot
         snapshot = await GuildSnapshot.get_or_none(category_id=category.id)
         if not snapshot:
             await ctx.reply("No snapshot exists for this category.")
             return
 
-        # Map current channels
-        channels_map = {ch.id: ch for ch in category.channels}
-        new_order = [channels_map.get(ch_id) for ch_id in snapshot.channel_list if channels_map.get(ch_id)]
+        moved_back = []
+        reordered = []
 
-        if not new_order:
-            await ctx.reply("Snapshot channel IDs do not match current channels.")
-            return
+        # ensure all snapshot channels are back in the category
+        for pos, ch_id in enumerate(snapshot.channel_list):
+            ch = guild.get_channel(ch_id)
+            if not ch:
+                continue # channel deleted
 
-        # Sort all channels by position
-        all_channels_sorted = sorted(category.channels, key=lambda c: (c.position, c.id))
-
-        # Separate by type
-        text_forum_channels = [ch for ch in all_channels_sorted if ch.type in TEXT_CHANNEL_TYPES]
-        voice_channels = [ch for ch in all_channels_sorted if ch.type in VOICE_CHANNEL_TYPES]
-
-        # Combine: text+forum first, then voice (voice order preserved among themselves)
-        all_channels = text_forum_channels + voice_channels
-
-        # Compare current positions to snapshot
-        moves_needed = []
-        for new_pos, ch in enumerate(new_order):
-            if ch.position != new_pos:
-                moves_needed.append((ch, new_pos))
-
-        # Check if already in order
-        current_order_ids = [ch.id for ch in all_channels]
-        new_order_ids = [ch.id for ch in new_order]
-
-        if current_order_ids[:len(new_order_ids)] == new_order_ids:
-            await ctx.reply("Channels are already in the snapshot order. No changes needed.")
-            return
-
-        # Move only out-of-position channels
-        for ch, new_pos in moves_needed:
             try:
-                await ch.edit(position=new_pos)
+                # If channel is in wrong category, move it back
+                if ch.category_id != category.id:
+                    await ch.edit(category=category)
+                    moved_back.append(ch.name)
             except discord.Forbidden:
-                await ctx.reply(f"Missing permission to edit {ch.name}.")
+                await ctx.reply(f"Missing permission to move {ch.name}.")
                 return
             except discord.HTTPException as e:
-                await ctx.reply(f"Failed to reorder {ch.name}: {e}")
+                await ctx.reply(f"Failed moving {ch.name}: {e}")
                 return
+
+        # reorder channels inside the category
+        for new_pos, ch_id in enumerate(snapshot.channel_list):
+            ch = guild.get_channel(ch_id)
+            if not ch:
+                continue
+
+            try:
+                if ch.position != new_pos:
+                    await ch.edit(position=new_pos)
+                    reordered.append(ch.name)
+            except discord.Forbidden:
+                await ctx.reply(f"Missing permission to reorder {ch.name}.")
+                return
+            except discord.HTTPException as e:
+                await ctx.reply(f"Failed reordering {ch.name}: {e}")
+                return
+
+        if not moved_back and not reordered:
+            await ctx.reply("Channels are already in the snapshot order.")
+            return
 
         await ctx.reply(f"`{category.name}` channels have been reordered to match the snapshot.")
 
