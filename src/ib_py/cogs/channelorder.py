@@ -170,10 +170,6 @@ class ChannelOrder(commands.Cog):
         # Filter and group
         embed = self.create_snapshot_embed(category, snapshot_channels)
 
-        embed.set_footer(
-            text=f"Category ID: {category.id} | Total channels: {len(snapshot.channel_list)}"
-        )
-
         await ctx.reply(embed=embed)
 
 
