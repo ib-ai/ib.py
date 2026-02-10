@@ -69,10 +69,6 @@ class ChannelOrder(commands.Cog):
         """
         Take a snapshot of all channels (text, voice, forum) in the given category.
         """
-        if not category:
-            await ctx.reply("Invalid category ID or name.")
-            return
-
         # Sort all channels by position
         all_channels_sorted = sorted(category.channels, key=lambda c: (c.position, c.id))
 
@@ -104,10 +100,6 @@ class ChannelOrder(commands.Cog):
         Also restores channels that were moved out of the category.
         """
         guild = ctx.guild
-
-        if not category:
-            await ctx.reply("Invalid category ID or name.")
-            return
 
         snapshot = await GuildSnapshot.get_or_none(category_id=category.id)
         if not snapshot:
@@ -165,10 +157,6 @@ class ChannelOrder(commands.Cog):
         Staff-only command.
         """
         guild = ctx.guild
-
-        if not category:
-            await ctx.reply("Invalid category ID or name.")
-            return
 
         # Fetch snapshot from DB
         snapshot = await GuildSnapshot.get_or_none(category_id=category.id)
