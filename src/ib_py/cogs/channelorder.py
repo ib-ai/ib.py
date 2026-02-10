@@ -106,6 +106,9 @@ class ChannelOrder(commands.Cog):
             await ctx.reply("No snapshot exists for this category.")
             return
 
+        moved_back = False
+        reordered = False
+
         # ensure all snapshot channels are back in the category
         for pos, ch_id in enumerate(snapshot.channel_list):
             ch = guild.get_channel(ch_id)
@@ -116,7 +119,7 @@ class ChannelOrder(commands.Cog):
                 # If channel is in wrong category, move it back
                 if ch.category_id != category.id:
                     await ch.edit(category=category)
-                    moved_back = ch.name
+                    moved_back = True
             except discord.Forbidden:
                 await ctx.reply(f"Missing permission to move {ch.name}.")
                 return
@@ -133,7 +136,7 @@ class ChannelOrder(commands.Cog):
             try:
                 if ch.position != new_pos:
                     await ch.edit(position=new_pos)
-                    reordered = ch.name
+                    reordered = True
             except discord.Forbidden:
                 await ctx.reply(f"Missing permission to reorder {ch.name}.")
                 return
