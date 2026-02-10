@@ -12,65 +12,63 @@ TEXT_CHANNEL_TYPES = {
 VOICE_CHANNEL_TYPES = {discord.ChannelType.voice, discord.ChannelType.stage_voice}
 
 
+class ChannelCategory(commands.Converter):
+    async def convert(self, ctx: commands.Context, argument: str) -> discord.CategoryChannel:
+        guild = ctx.guild
+
+        # Try ID first
+        if argument.isdigit():
+            category = discord.utils.get(guild.categories, id=int(argument))
+            if category:
+                return category
+
+        # Try name (case-insensitive)
+        category = discord.utils.find(
+            lambda c: c.name.lower() == argument.lower(), guild.categories
+        )
+
+        if category:
+            return category
+
+        raise commands.BadArgument(f"Category `{argument}` not found.")
+
+
 class ChannelOrder(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-
-    @commands.hybrid_group(aliases=["co"])
-    async def channelorder(self, ctx: commands.Context):
-        """Commands for discord channel arrangement within categories."""
-        if ctx.invoked_subcommand is None:
-            await ctx.send_help(ctx.command)
-
-    def get_category(
-        self, guild: discord.Guild, category_input: str | int
-    ) -> discord.CategoryChannel | None:
-        """
-        Retrieves a category from a guild by name or ID.
-        """
-        # Try ID
-        try:
-            category_id = int(category_input)
-            category = discord.utils.get(guild.categories, id=category_id)
-            if category:
-                return category
-        except ValueError:
-            pass  # Not an ID, so treat as name
-
-        # Try by name (case-insensitive)
-        category = discord.utils.find(
-            lambda c: c.name.lower() == str(category_input).lower(), guild.categories
-        )
-        return category
 
     def create_snapshot_embed(self, category, channels):
         """
         Helper function to create a snapshot embed for a given category.
         Channels are listed on separate lines and mentioned using <#id>.
         """
-        fields = []
-        if channels:
-            # Mention each channel on a new line
-            channel_mentions = "\n".join(f"<#{ch.id}>" for ch in channels)
-        else:
-            channel_mentions = "None"
-
-        fields.append(("Channels", channel_mentions, False))
-
         embed = discord.Embed(
-            title=f"📸 Snapshot for {category.name}", color=discord.Color.blue()
+            title=f"📸 Snapshot for {category.name}",
+            color=discord.Color.blue(),
         )
-        for name, value, inline in fields:
-            embed.add_field(name=name, value=value, inline=inline)
+
+        embed.add_field(
+            name="Channels",
+            value="\n".join(f"<#{ch.id}>" for ch in channels) or "None",
+            inline=False,
+        )
+        embed.set_footer(text=f"Category ID: {category.id} | Total channels: {len(channels)}")
         return embed
+
+    @commands.hybrid_group(aliases=["co"])
+    async def channelorder(self, ctx: commands.Context):
+        """
+        Commands for discord channel arrangement within categories.
+        """
+        if ctx.invoked_subcommand is None:
+            await ctx.send_help(ctx.command)
 
     @channelorder.command(name="snapshot")
     @commands.has_permissions(administrator=True)
-    async def snapshot(self, ctx: commands.Context, *, category_input: str):
-        """Take a snapshot of all channels (text, voice, forum) in the given category."""
-        guild = ctx.guild
-        category = self.get_category(guild, category_input)
-
+    async def snapshot(self, ctx: commands.Context, *, category: ChannelCategory):
+        """
+        Take a snapshot of all channels (text, voice, forum) in the given category.
+        """
         if not category:
             await ctx.reply("Invalid category ID or name.")
             return
@@ -91,31 +89,21 @@ class ChannelOrder(commands.Cog):
 
         # Upsert snapshot
         channel_ids = [ch.id for ch in all_channels]
-        existing_snapshot = await GuildSnapshot.get_or_none(category_id=category.id)
+        snapshot, created = await GuildSnapshot.get_or_create(category_id=category.id)
+        snapshot.channel_list = channel_ids
+        await snapshot.save()
 
-        if existing_snapshot:
-            existing_snapshot.channel_list = channel_ids
-            await existing_snapshot.save()
-            msg = "Updated existing snapshot."
-        else:
-            await GuildSnapshot.create(category_id=category.id, channel_list=channel_ids)
-            msg = "Created new snapshot."
-
-        embed.set_footer(
-            text=f"Category ID: {category.id} | Total channels: {len(channel_ids)}"
-        )
-
-        await ctx.reply(f"{msg}", embed=embed)
+        msg = "Created new snapshot." if created else "Updated existing snapshot."
+        await ctx.reply(msg, embed=embed)
 
     @channelorder.command(aliases=["r"])
     @commands.has_permissions(manage_channels=True)
-    async def rollback(self, ctx: commands.Context, *, category_input: str):
+    async def rollback(self, ctx: commands.Context, *, category: ChannelCategory):
         """
         Rollback channels in a category to the saved snapshot order.
         Also restores channels that were moved out of the category.
         """
         guild = ctx.guild
-        category = self.get_category(guild, category_input)
 
         if not category:
             await ctx.reply("Invalid category ID or name.")
@@ -125,9 +113,6 @@ class ChannelOrder(commands.Cog):
         if not snapshot:
             await ctx.reply("No snapshot exists for this category.")
             return
-
-        moved_back = []
-        reordered = []
 
         # ensure all snapshot channels are back in the category
         for pos, ch_id in enumerate(snapshot.channel_list):
@@ -139,7 +124,7 @@ class ChannelOrder(commands.Cog):
                 # If channel is in wrong category, move it back
                 if ch.category_id != category.id:
                     await ch.edit(category=category)
-                    moved_back.append(ch.name)
+                    moved_back = ch.name
             except discord.Forbidden:
                 await ctx.reply(f"Missing permission to move {ch.name}.")
                 return
@@ -156,7 +141,7 @@ class ChannelOrder(commands.Cog):
             try:
                 if ch.position != new_pos:
                     await ch.edit(position=new_pos)
-                    reordered.append(ch.name)
+                    reordered = ch.name
             except discord.Forbidden:
                 await ctx.reply(f"Missing permission to reorder {ch.name}.")
                 return
@@ -174,13 +159,12 @@ class ChannelOrder(commands.Cog):
 
     @channelorder.command(name="view")
     @commands.has_permissions(manage_channels=True)
-    async def list_snapshot(self, ctx: commands.Context, *, category_input: str):
+    async def list_snapshot(self, ctx: commands.Context, *, category: ChannelCategory):
         """
         List the stored snapshot for a given category (by ID or name).
         Staff-only command.
         """
         guild = ctx.guild
-        category = self.get_category(guild, category_input)
 
         if not category:
             await ctx.reply("Invalid category ID or name.")
