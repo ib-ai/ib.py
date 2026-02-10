@@ -4,12 +4,11 @@ version = "0.1.0"
 description = "Discord bot for International Baccalaureate Discord server."
 requires-python = ">=3.11"
 dependencies = [
-    "aerich>=0.9.2",
     "async-lru>=2.0.5",
     "discord-py>=2.6.4",
     "python-dotenv>=1.2.1",
     "toml>=0.10.2",
-    "tortoise-orm[asyncpg]>=0.25.1",
+    "tortoise-orm[asyncpg]>=1.0.0",
 ]
 readme = "README.md"
 
@@ -33,7 +32,7 @@ dev = [
     "ruff>=0.14.4",
 ]
 
-[tool.aerich]
+[tool.tortoise]
 tortoise_orm = "src.ib_py.db.db.TORTOISE_ORM"
 location = "./migrations"
 src_folder = "./."
