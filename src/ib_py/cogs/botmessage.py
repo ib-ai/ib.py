@@ -45,16 +45,26 @@ class BotMessages(commands.Cog):
         )
         ctx_menu_edit_message.default_permissions = discord.Permissions(manage_messages=True)
         ctx_menu_edit_message.add_check(self.staff_interaction_on_self_message)
+        self.ctx_menu_commands.append(ctx_menu_edit_message)
 
         ctx_menu_add_embeds = app_commands.context_menu(name="Add Embeds")(
             self.ctx_menu_add_embeds
         )
         ctx_menu_add_embeds.default_permissions = discord.Permissions(manage_messages=True)
         ctx_menu_add_embeds.add_check(self.staff_interaction_on_self_message)
+        self.ctx_menu_commands.append(ctx_menu_add_embeds)
+
+        logger.debug(
+            f"Registering {len(self.ctx_menu_commands)} context menu commands for BotMessages cog."
+        )
 
     async def cog_unload(self):
         for cmd in self.ctx_menu_commands:
             self.bot.tree.remove_command(cmd.name, type=cmd.type)
+
+        logger.debug(
+            f"Unloaded {len(self.ctx_menu_commands)} context menu commands from BotMessages cog."
+        )
 
     @staticmethod
     def parse_json_or_text(input_str: str):
