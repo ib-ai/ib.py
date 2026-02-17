@@ -9,7 +9,7 @@ jobs:
       test-db:
         image: postgres:16-alpine
         container_name: ib-py-test-db
-        environment:
+        env:
           POSTGRES_USER: test_user
           POSTGRES_PASSWORD: test_password
           POSTGRES_DB: test_ib_py
