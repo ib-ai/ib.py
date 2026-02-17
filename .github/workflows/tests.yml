@@ -8,13 +8,17 @@ jobs:
     services:
       test-db:
         image: postgres:16-alpine
-        container_name: ib-py-test-db
         env:
           POSTGRES_USER: test_user
           POSTGRES_PASSWORD: test_password
           POSTGRES_DB: test_ib_py
         ports:
           - "5432:5432"
+        options: >-
+          --health-cmd="pg_isready -U test_user -d test_ib_py"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=5
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
