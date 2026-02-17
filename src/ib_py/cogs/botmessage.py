@@ -316,6 +316,9 @@ class BotMessages(commands.Cog):
 
         args = BotMessages.parse_json_or_text(json_or_text)
         original_message = await channel.fetch_message(message_id)
+        if original_message.author.id != self.bot.user.id:
+            await ctx.send("You can only edit messages sent by this bot.")
+            return
 
         view = self.ConfirmationView()
         preview_message = await ctx.send(**args)
