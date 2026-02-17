@@ -23,6 +23,15 @@ jobs:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
       - run: uv sync
+      - run: |
+          cat > config.toml <<EOF
+          # config data
+          prefix="&"
+          description="IB.PY TESTING BOT"
+          application_id=488692773566808084
+          log_level="DEBUG"
+          sticky_roles=[]
+          EOF
       - name: Wait for PostgreSQL to be ready
         run: |
           until pg_isready -h localhost -p 5432 -U test_user; do
@@ -35,9 +44,4 @@ jobs:
           TEST_DB_USER: "test_user"
           TEST_DB_NAME: "test_ib_py"
           TEST_DB_PASSWORD: "test_password"
-          PREFIX: "&"
-          DESCRIPTION: ""
-          APPLICATION_ID: 0
-          LOG_LEVEL: "DEBUG"
-          STICKY_ROLES: []
         run: uv run pytest -v
