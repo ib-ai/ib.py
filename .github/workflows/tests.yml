@@ -5,12 +5,35 @@ on: pull_request
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      test-db:
+        image: postgres:16-alpine
+        container_name: ib-py-test-db
+        environment:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_ib_py
+        ports:
+          - "5432:5432"
     steps:
       - uses: actions/checkout@v6
-      - uses: docker/setup-compose-action@v1
-        with:
-          version: latest
       - uses: astral-sh/setup-uv@v7
       - run: uv sync
-      - run: docker-compose -f docker-compose.test.yml up -d
-      - run: uv run pytest -v
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          until pg_isready -h localhost -p 5432 -U test_user; do
+            sleep 1
+          done
+      - name: Run Tests
+        env:
+          TEST_DB_HOST: "localhost"
+          TEST_DB_PORT: "5432"
+          TEST_DB_USER: "test_user"
+          TEST_DB_NAME: "test_ib_py"
+          TEST_DB_PASSWORD: "test_password"
+          PREFIX: "&"
+          DESCRIPTION: ""
+          APPLICATION_ID: 0
+          LOG_LEVEL: "DEBUG"
+          STICKY_ROLES: []
+        run: uv run pytest -v
