@@ -1,3 +1,4 @@
+import discord
 from discord.ext import commands
 
 from ..db.cached import get_guild_data
@@ -7,15 +8,20 @@ def cogify(check):
     return lambda self, ctx: check.predicate(ctx)
 
 
-async def is_moderator(ctx: commands.Context):
-    assert await commands.guild_only().predicate(ctx)
-    guild_data = await get_guild_data(ctx.guild.id)
+async def is_moderator_member(member: discord.Member) -> bool:
+    guild_data = await get_guild_data(member.guild.id)
     moderator_role_id = guild_data.moderator_id if guild_data else None
+
     return (
-        any(role.id == moderator_role_id for role in ctx.author.roles)
+        any(role.id == moderator_role_id for role in member.roles)
         if moderator_role_id
         else False
     )
+
+
+async def is_moderator(ctx: commands.Context):
+    assert await commands.guild_only().predicate(ctx)
+    return await is_moderator_member(ctx.author)
 
 
 def admin_command():
