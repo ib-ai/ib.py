@@ -31,8 +31,8 @@ class BotMessages(commands.Cog):
         self.bot = bot
         self.ctx_menu_commands = []
 
-    async def cog_load(self):
-        # Register context menu commands & set permissions + checks
+        # Specify context menu commands & set permissions + checks
+
         ctx_menu_get_json = app_commands.context_menu(name="Get Message JSON")(
             self.ctx_menu_get_json
         )
@@ -44,15 +44,19 @@ class BotMessages(commands.Cog):
             self.ctx_menu_edit_message
         )
         ctx_menu_edit_message.default_permissions = discord.Permissions(manage_messages=True)
-        ctx_menu_edit_message.add_check(self.staff_interaction_on_self_message)
+        ctx_menu_edit_message.add_check(self.staff_interaction)
         self.ctx_menu_commands.append(ctx_menu_edit_message)
 
         ctx_menu_add_embeds = app_commands.context_menu(name="Add Embeds")(
             self.ctx_menu_add_embeds
         )
         ctx_menu_add_embeds.default_permissions = discord.Permissions(manage_messages=True)
-        ctx_menu_add_embeds.add_check(self.staff_interaction_on_self_message)
+        ctx_menu_add_embeds.add_check(self.staff_interaction)
         self.ctx_menu_commands.append(ctx_menu_add_embeds)
+
+    async def cog_load(self):
+        for cmd in self.ctx_menu_commands:
+            self.bot.tree.add_command(cmd)
 
         logger.debug(
             f"Registering {len(self.ctx_menu_commands)} context menu commands for BotMessages cog."
@@ -135,17 +139,6 @@ class BotMessages(commands.Cog):
 
         return await is_moderator_member(interaction.user)
 
-    async def staff_interaction_on_self_message(
-        self, interaction: discord.Interaction
-    ) -> bool:
-        # Must be called on a message from this bot
-        if not interaction.message or interaction.message.author.id != self.bot.user.id:
-            await interaction.response.send_message(
-                "This command can only be used on messages sent by this bot.", ephemeral=True
-            )
-            return False
-        return await self.staff_interaction(interaction)
-
     # Interactions Classes
 
     # See: https://github.com/ib-ai/modmail.py/blob/main/utils/ticket_embed.py#L19
@@ -212,6 +205,12 @@ class BotMessages(commands.Cog):
         """
         Context menu for editing a message.
         """
+        # Ensure the message is from this bot
+        if message.author.id != self.bot.user.id:
+            await interaction.response.send_message(
+                "You can only edit messages sent by this bot.", ephemeral=True
+            )
+            return
 
         async def edit_action(interaction: discord.Interaction, m: discord.Message, **args):
             await m.edit(**args)
@@ -227,6 +226,12 @@ class BotMessages(commands.Cog):
         """
         Context menu for adding embeds to a message.
         """
+        # Ensure the message is from this bot
+        if message.author.id != self.bot.user.id:
+            await interaction.response.send_message(
+                "You can only edit messages sent by this bot.", ephemeral=True
+            )
+            return
 
         async def add_embeds_action(
             interaction: discord.Interaction, m: discord.Message, **args
