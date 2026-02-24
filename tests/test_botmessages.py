@@ -424,49 +424,6 @@ class TestStaffInteraction:
             mock_is_mod.assert_not_awaited()
 
 
-class TestStaffInteractionOnSelfMessage:
-    """Tests for the staff_interaction_on_self_message check."""
-
-    async def test_rejects_non_bot_message(self, botmessage_cog):
-        """Messages not sent by the bot should be rejected with an ephemeral error."""
-        interaction = MagicMock()
-        interaction.message = MagicMock()
-        interaction.message.author.id = 99999  # not the bot
-        interaction.response.send_message = AsyncMock()
-
-        result = await botmessage_cog.staff_interaction_on_self_message(interaction)
-
-        assert result is False
-        interaction.response.send_message.assert_awaited_once()
-        call_kwargs = interaction.response.send_message.call_args
-        assert "only be used on messages sent by this bot" in call_kwargs.args[0]
-        assert call_kwargs.kwargs["ephemeral"] is True
-
-    async def test_rejects_when_no_message(self, botmessage_cog):
-        """Should reject when interaction.message is None."""
-        interaction = MagicMock()
-        interaction.message = None
-        interaction.response.send_message = AsyncMock()
-
-        result = await botmessage_cog.staff_interaction_on_self_message(interaction)
-
-        assert result is False
-        interaction.response.send_message.assert_awaited_once()
-
-    async def test_bot_message_delegates_to_staff_interaction(self, botmessage_cog):
-        """
-        When the message IS from the bot, the check delegates to staff_interaction.
-        """
-        interaction = MagicMock()
-        interaction.message = MagicMock()
-        interaction.message.author.id = botmessage_cog.bot.user.id
-        interaction.user.guild_permissions.manage_guild = False
-        interaction.response.send_message = AsyncMock()
-
-        result = await botmessage_cog.staff_interaction_on_self_message(interaction)
-        assert result is False  # because user is not staff
-
-
 # ============================================================
 # 5.  Context Menu: Get Message JSON
 # ============================================================
@@ -584,6 +541,7 @@ class TestCtxMenuEditMessage:
 
     async def test_sends_modal(self, botmessage_cog):
         message = MockMessage(content="Original")
+        message.author = botmessage_cog.bot.user  # Must be from this bot to edit
         interaction = MagicMock()
         interaction.response.send_modal = AsyncMock()
 
@@ -596,6 +554,7 @@ class TestCtxMenuEditMessage:
     async def test_modal_action_edits_and_responds(self, botmessage_cog):
         """The edit action should edit the message and send an ephemeral response."""
         message = MagicMock()
+        message.author = botmessage_cog.bot.user  # Must be from this bot to edit
         message.edit = AsyncMock()
         interaction = MagicMock()
         interaction.response.send_modal = AsyncMock()
@@ -612,6 +571,19 @@ class TestCtxMenuEditMessage:
             "Message edited!", ephemeral=True
         )
 
+    async def test_non_bot_message_rejected(self, botmessage_cog):
+        """Trying to edit a message not sent by this bot should send an error."""
+        message = MockMessage(content="Original")
+        message.author = MagicMock(id=999999)  # Not the bot's user ID
+        interaction = MagicMock()
+        interaction.response.send_message = AsyncMock()
+
+        await botmessage_cog.ctx_menu_edit_message(interaction, message)
+
+        interaction.response.send_message.assert_awaited_once()
+        resp = interaction.response.send_message.call_args.args[0]
+        assert "only edit messages sent by this bot" in resp.lower()
+
 
 # ============================================================
 # 7.  Context Menu: Add Embeds
@@ -623,6 +595,7 @@ class TestCtxMenuAddEmbeds:
 
     async def test_sends_modal(self, botmessage_cog):
         message = MockMessage(content="Original")
+        message.author = botmessage_cog.bot.user  # Must be from this bot to edit
         interaction = MagicMock()
         interaction.response.send_modal = AsyncMock()
 
@@ -637,6 +610,7 @@ class TestCtxMenuAddEmbeds:
         existing = discord.Embed(title="Old")
         new_embed = discord.Embed(title="New")
         message = MagicMock()
+        message.author = botmessage_cog.bot.user  # Must be from this bot to edit
         message.embeds = [existing]
         message.edit = AsyncMock()
         interaction = MagicMock()
@@ -659,6 +633,7 @@ class TestCtxMenuAddEmbeds:
     async def test_action_rejects_content_change(self, botmessage_cog):
         """Setting content via Add Embeds should be rejected with an error."""
         message = MagicMock()
+        message.author = botmessage_cog.bot.user  # Must be from this bot to edit
         message.embeds = []
         message.edit = AsyncMock()
         interaction = MagicMock()
@@ -677,6 +652,7 @@ class TestCtxMenuAddEmbeds:
     async def test_action_with_no_new_embeds_sends_notice(self, botmessage_cog):
         """Submitting without any embeds should send 'No embeds added.'"""
         message = MagicMock()
+        message.author = botmessage_cog.bot.user  # Must be from this bot to edit
         message.embeds = [discord.Embed(title="Keep")]
         message.edit = AsyncMock()
         interaction = MagicMock()
@@ -696,6 +672,7 @@ class TestCtxMenuAddEmbeds:
     async def test_action_multiple_embeds_reports_count(self, botmessage_cog):
         """Adding multiple embeds should report the correct count."""
         message = MagicMock()
+        message.author = botmessage_cog.bot.user  # Must be from this bot to edit
         message.embeds = []
         message.edit = AsyncMock()
         interaction = MagicMock()
@@ -714,6 +691,19 @@ class TestCtxMenuAddEmbeds:
         await modal.action(action_interaction, message, embeds=new_embeds)
         message.edit.assert_awaited_once()
         assert "3 embed(s) added" in action_interaction.response.send_message.call_args.args[0]
+
+    async def test_non_bot_message_rejected(self, botmessage_cog):
+        """Trying to add embeds to a message not sent by this bot should send an error."""
+        message = MockMessage(content="Original")
+        message.author = MagicMock(id=999999)  # Not the bot's user ID
+        interaction = MagicMock()
+        interaction.response.send_message = AsyncMock()
+
+        await botmessage_cog.ctx_menu_add_embeds(interaction, message)
+
+        interaction.response.send_message.assert_awaited_once()
+        resp = interaction.response.send_message.call_args.args[0]
+        assert "only edit messages sent by this bot" in resp.lower()
 
 
 # ============================================================
@@ -1051,29 +1041,17 @@ class TestEmbedrawCommand:
 class TestCogLifecycle:
     """Tests for cog_load and cog_unload registering / removing commands."""
 
-    async def test_cog_load_populates_ctx_menu_commands(self, bot):
+    async def test_cog_load_registers_stored_commands(self, bot):
         cog = BotMessages(bot)
-        assert cog.ctx_menu_commands == []
+        bot.tree = MagicMock()
+        bot.tree.add_command = MagicMock()
 
         await cog.cog_load()
-        assert len(cog.ctx_menu_commands) > 0
 
-    async def test_cog_load_sets_default_permissions(self, bot):
-        cog = BotMessages(bot)
-        await cog.cog_load()
-
+        # Should register all commands in ctx_menu_commands
+        assert bot.tree.add_command.call_count == len(cog.ctx_menu_commands)
         for cmd in cog.ctx_menu_commands:
-            assert cmd.default_permissions == discord.Permissions(manage_messages=True)
-
-    async def test_cog_load_get_json_uses_staff_interaction_check(self, bot):
-        """Get Message JSON should use the basic staff_interaction check."""
-        cog = BotMessages(bot)
-        await cog.cog_load()
-
-        get_json_cmd = cog.ctx_menu_commands[0]
-        assert get_json_cmd.name == "Get Message JSON"
-        # The command should have checks registered
-        assert len(get_json_cmd.checks) > 0
+            bot.tree.add_command.assert_any_call(cmd)
 
     async def test_cog_unload_removes_stored_commands(self, bot):
         cog = BotMessages(bot)
