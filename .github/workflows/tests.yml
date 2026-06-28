@@ -1,0 +1,47 @@
+name: Run Tests
+
+on: pull_request
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      test-db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_ib_py
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd="pg_isready -U test_user -d test_ib_py"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+      - run: uv sync
+      - run: |
+          cat > config.toml <<EOF
+          # config data
+          prefix="&"
+          description="IB.PY TESTING BOT"
+          application_id=488692773566808084
+          log_level="DEBUG"
+          sticky_roles=[]
+          EOF
+      - name: Wait for PostgreSQL to be ready
+        run: |
+          until pg_isready -h localhost -p 5432 -U test_user; do
+            sleep 1
+          done
+      - name: Run Tests
+        env:
+          TEST_DB_HOST: "localhost"
+          TEST_DB_PORT: "5432"
+          TEST_DB_USER: "test_user"
+          TEST_DB_NAME: "test_ib_py"
+          TEST_DB_PASSWORD: "test_password"
+        run: uv run pytest -v

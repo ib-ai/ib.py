@@ -8,6 +8,7 @@ from tortoise import timezone
 from ib_py.cogs.dev import Dev
 from ib_py.cogs.moderation import Moderation, punishment_format, revocation_format
 from ib_py.config import IBPyConfig
+from ib_py.db.cached import get_guild_data
 from ib_py.db.models import (
     GuildData,
     MemberRole,
@@ -63,6 +64,7 @@ class TestReason:
             modlog_id=modlog_channel.id,
             modlog_staff_id=modlog_staff_channel.id,
         )
+        get_guild_data.cache_clear()
         moderation_cog.bot.guilds = [ctx.guild]
 
         modlog_channel.messages.append(
@@ -98,6 +100,7 @@ class TestReason:
 
     async def test_case_does_not_exist(self, moderation_cog, ctx):
         """Test updating reason for a non-existent case."""
+        get_guild_data.cache_clear()
         await moderation_cog.reason(ctx, -1, reason="Test reason")
 
         assert len(ctx.messages_sent) == 1
@@ -214,6 +217,7 @@ class TestAuditLog:
             modlog_staff_id=modlog_staff_channel.id,
             mute_id=mute_role.id,
         )
+        get_guild_data.cache_clear()
         moderation_cog.bot.guilds = [ctx.guild]
 
         return locals()
@@ -382,6 +386,7 @@ class TestPunishmentLogs:
         self, moderation_cog, entry, modlog_channel, modlog_staff_channel
     ):
         """Test publishing punishment log when no log channels are set."""
+        get_guild_data.cache_clear()
 
         await moderation_cog.publish_punishment_log(PunishmentType.BAN, entry)
 
@@ -398,6 +403,7 @@ class TestPunishmentLogs:
     ):
         """Test publishing punishment log when no log channels are configured."""
         await GuildData.create(prefix="&", guild_id=ctx.guild.id)
+        get_guild_data.cache_clear()
         await moderation_cog.publish_punishment_log(PunishmentType.BAN, entry)
 
         # No messages sent in log channels
@@ -413,6 +419,7 @@ class TestPunishmentLogs:
     ):
         """Test publishing punishment log to public channel only."""
         await GuildData.create(prefix="&", guild_id=ctx.guild.id, modlog_id=modlog_channel.id)
+        get_guild_data.cache_clear()
         await moderation_cog.publish_punishment_log(PunishmentType.BAN, entry)
 
         # Should send message to public channel only
@@ -430,6 +437,7 @@ class TestPunishmentLogs:
     ):
         """Test publishing punishment log to public channel only with redacted reason."""
         await GuildData.create(prefix="&", guild_id=ctx.guild.id, modlog_id=modlog_channel.id)
+        get_guild_data.cache_clear()
         entry.reason += " -redact"
         await moderation_cog.publish_punishment_log(PunishmentType.BAN, entry)
 
@@ -455,6 +463,7 @@ class TestPunishmentLogs:
         await GuildData.create(
             prefix="&", guild_id=ctx.guild.id, modlog_staff_id=modlog_staff_channel.id
         )
+        get_guild_data.cache_clear()
         await moderation_cog.publish_punishment_log(PunishmentType.KICK, entry)
 
         # Should send message to staff channel only
@@ -474,6 +483,7 @@ class TestPunishmentLogs:
         await GuildData.create(
             prefix="&", guild_id=ctx.guild.id, modlog_staff_id=modlog_staff_channel.id
         )
+        get_guild_data.cache_clear()
         entry.reason += " -redact"
         await moderation_cog.publish_punishment_log(PunishmentType.KICK, entry)
 
@@ -502,6 +512,7 @@ class TestPunishmentLogs:
             modlog_id=modlog_channel.id,
             modlog_staff_id=modlog_staff_channel.id,
         )
+        get_guild_data.cache_clear()
         await moderation_cog.publish_punishment_log(PunishmentType.KICK, entry)
 
         # Should send to both channels
@@ -526,6 +537,7 @@ class TestPunishmentLogs:
             modlog_id=modlog_channel.id,
             modlog_staff_id=modlog_staff_channel.id,
         )
+        get_guild_data.cache_clear()
         entry.reason += " -redact"
         await moderation_cog.publish_punishment_log(PunishmentType.KICK, entry)
 
@@ -554,6 +566,7 @@ class TestPunishmentLogs:
         self, moderation_cog, entry, modlog_channel, modlog_staff_channel
     ):
         """Test publishing revocation log when no guild data exists."""
+        get_guild_data.cache_clear()
         await moderation_cog.publish_revocation_log(PunishmentType.BAN, entry)
 
         # Should not send any messages
@@ -565,6 +578,7 @@ class TestPunishmentLogs:
     ):
         """Test publishing revocation log when no log channels are configured."""
         await GuildData.create(prefix="&", guild_id=ctx.guild.id)
+        get_guild_data.cache_clear()
         await moderation_cog.publish_revocation_log(PunishmentType.BAN, entry)
 
         # Should not send any messages
@@ -576,6 +590,7 @@ class TestPunishmentLogs:
     ):
         """Test publishing revocation log to public channel only."""
         await GuildData.create(prefix="&", guild_id=ctx.guild.id, modlog_id=modlog_channel.id)
+        get_guild_data.cache_clear()
         await moderation_cog.publish_revocation_log(PunishmentType.BAN, entry)
 
         # Should send message to public channel only
@@ -589,6 +604,7 @@ class TestPunishmentLogs:
         await GuildData.create(
             prefix="&", guild_id=ctx.guild.id, modlog_staff_id=modlog_staff_channel.id
         )
+        get_guild_data.cache_clear()
         await moderation_cog.publish_revocation_log(PunishmentType.MUTE, entry)
 
         # Should send message to staff channel only
@@ -605,6 +621,7 @@ class TestPunishmentLogs:
             modlog_id=modlog_channel.id,
             modlog_staff_id=modlog_staff_channel.id,
         )
+        get_guild_data.cache_clear()
         await moderation_cog.publish_revocation_log(PunishmentType.BAN, entry)
 
         # Should send to both channels
@@ -658,6 +675,7 @@ class TestMessageLogs:
         self, moderation_cog, ctx, user, message, logs_channel
     ):
         """Test message edit logging when no guild data exists."""
+        get_guild_data.cache_clear()
         edited = MockMessage(id=1000000000, content="edited content", channel=ctx.channel)
         edited.author = user
         edited.guild = ctx.guild
@@ -672,6 +690,7 @@ class TestMessageLogs:
     ):
         """Test message edit logging when no logs channel is configured."""
         await GuildData.create(prefix="&", guild_id=ctx.guild.id)
+        get_guild_data.cache_clear()
         edited = MockMessage(id=1000000000, content="edited content", channel=ctx.channel)
         edited.author = user
         edited.guild = ctx.guild
@@ -686,6 +705,7 @@ class TestMessageLogs:
     ):
         """Test that bot message edits are ignored."""
         await GuildData.create(prefix="&", guild_id=ctx.guild.id, logs_id=logs_channel.id)
+        get_guild_data.cache_clear()
         edited = MockMessage(id=1000000000, content="edited content", channel=ctx.channel)
         edited.author = user
         edited.guild = ctx.guild
@@ -701,6 +721,7 @@ class TestMessageLogs:
     ):
         """Test logging message edit with both before and after content."""
         await GuildData.create(prefix="&", guild_id=ctx.guild.id, logs_id=logs_channel.id)
+        get_guild_data.cache_clear()
         edited = MockMessage(id=1000000000, content="edited content", channel=ctx.channel)
         edited.author = user
         edited.guild = ctx.guild
@@ -716,6 +737,7 @@ class TestMessageLogs:
     ):
         """Test logging message edit when before content is empty (e.g., embed only)."""
         await GuildData.create(prefix="&", guild_id=ctx.guild.id, logs_id=logs_channel.id)
+        get_guild_data.cache_clear()
 
         before = MockMessage(id=message.id, content="", channel=ctx.channel)
         before.author = user
@@ -732,6 +754,7 @@ class TestMessageLogs:
 
     async def test_message_delete_no_guild_data(self, moderation_cog, message, logs_channel):
         """Test message delete logging when no guild data exists."""
+        get_guild_data.cache_clear()
         await moderation_cog.on_message_delete(message)
 
         # Should not log anything
@@ -742,6 +765,7 @@ class TestMessageLogs:
     ):
         """Test message delete logging when no logs channel is configured."""
         await GuildData.create(prefix="&", guild_id=ctx.guild.id)
+        get_guild_data.cache_clear()
         await moderation_cog.on_message_delete(message)
 
         # Should not log anything
@@ -752,6 +776,7 @@ class TestMessageLogs:
     ):
         """Test that bot message deletions are ignored."""
         await GuildData.create(prefix="&", guild_id=ctx.guild.id, logs_id=logs_channel.id)
+        get_guild_data.cache_clear()
         user.bot = True
         await moderation_cog.on_message_delete(message)
 
@@ -763,6 +788,7 @@ class TestMessageLogs:
     ):
         """Test logging message deletion with content."""
         await GuildData.create(prefix="&", guild_id=ctx.guild.id, logs_id=logs_channel.id)
+        get_guild_data.cache_clear()
         await moderation_cog.on_message_delete(message)
 
         # Should log the deletion
@@ -774,6 +800,7 @@ class TestMessageLogs:
     ):
         """Test logging message deletion when content is empty (e.g., embed only)."""
         await GuildData.create(prefix="&", guild_id=ctx.guild.id, logs_id=logs_channel.id)
+        get_guild_data.cache_clear()
         await moderation_cog.on_message_delete(message)
 
         # Should log the deletion
@@ -1037,6 +1064,7 @@ class TestBlacklist:
             modlog_id=modlog_channel.id,
             modlog_staff_id=modlog_staff_channel.id,
         )
+        get_guild_data.cache_clear()
         moderation_cog.bot.guilds = [ctx.guild]
 
         return locals()  # Return locals so the decorator can extract variables
@@ -1224,6 +1252,7 @@ class TestExpire:
             guild_id=ctx.guild.id,
             mute_id=mute_role.id,
         )
+        get_guild_data.cache_clear()
         mute_punishment = await StaffPunishment.create(
             punishment_type=PunishmentType.MUTE,
             guild_id=ctx.guild.id,
@@ -1269,6 +1298,7 @@ class TestHistory:
 
     async def test_no_cases(self, moderation_cog, ctx, user):
         """Test history when user has no punishment history."""
+        get_guild_data.cache_clear()
         await moderation_cog.history(ctx, user)
 
         assert len(ctx.messages_sent) == 1
@@ -1288,6 +1318,7 @@ class TestHistory:
             message_id=1000000000,
         )
 
+        get_guild_data.cache_clear()
         await moderation_cog.history(ctx, user)
 
         assert len(ctx.messages_sent) == 1
@@ -1317,6 +1348,7 @@ class TestHistory:
             message_id=1000000001,
         )
 
+        get_guild_data.cache_clear()
         await moderation_cog.history(ctx, user)
 
         assert len(ctx.messages_sent) == 1
@@ -1330,6 +1362,7 @@ class TestLookup:
 
     async def test_lookup_non_existent_case(self, moderation_cog, ctx):
         """Test lookup with non_existent case number."""
+        get_guild_data.cache_clear()
         await moderation_cog.lookup(ctx, -1)
 
         assert len(ctx.messages_sent) == 1
@@ -1352,6 +1385,7 @@ class TestLookup:
             guild_id=ctx.guild.id,
             modlog_id=12345,
         )
+        get_guild_data.cache_clear()
 
         punishment = await StaffPunishment.create(
             punishment_type=PunishmentType.WARN,

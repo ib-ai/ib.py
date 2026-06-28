@@ -6,6 +6,7 @@ import pytest
 
 from ib_py.cogs.guildconfig import GuildConfig
 from ib_py.config import IBPyConfig
+from ib_py.db.cached import get_guild_data
 from ib_py.db.models import GuildData
 
 from .db import cleanup_tables
@@ -27,6 +28,7 @@ class TestGuildDataCommand:
 
     async def test_guilddata_no_data(self, guilddata_cog, ctx):
         """Test guilddata command when no data exists for the guild."""
+        get_guild_data.cache_clear()
         await guilddata_cog.guilddata.callback(guilddata_cog, ctx)
 
         assert len(ctx.messages_sent) == 1
@@ -59,6 +61,7 @@ class TestGuildDataCommand:
         """Test guilddata command with specific configuration field set."""
         create_kwargs = {field: value}
         await GuildData.create(guild_id=ctx.guild.id, **create_kwargs)
+        get_guild_data.cache_clear()
         await guilddata_cog.guilddata.callback(guilddata_cog, ctx)
 
         # Should send an embed
@@ -93,6 +96,7 @@ class TestGuildDataCommand:
             monitor_message_log_id=12350,
         )
         await GuildData.create(guild_id=ctx.guild.id, **create_kwargs)
+        get_guild_data.cache_clear()
         await guilddata_cog.guilddata.callback(guilddata_cog, ctx)
 
         # Should send an embed with all data
