@@ -74,7 +74,7 @@ class GuildVoteLadder(Model):
 
     vote_ladder_id = fields.IntField(primary_key=True)
     vote_ladder_label = fields.CharField(max_length=256)
-    vote_ladder_roles = ArrayField()
+    vote_ladder_roles = ArrayField(element_type="BIGINT")
     channel_id = fields.BigIntField()
     threshold = fields.IntField()
     minimum = fields.IntField()
@@ -88,11 +88,12 @@ class GuildVote(Model):
     vote_id = fields.IntField(primary_key=True)
     message_id = fields.BigIntField()
     message = fields.TextField()
-    positive = fields.IntField(default=0)
-    negative = fields.IntField(default=0)
+    options = fields.JSONField(default=["Yes", "No"])
+    totals = fields.JSONField(default=[0, 0])
+    voters = fields.JSONField(default=dict)  # {"123456": 0}
     expiry = fields.IntField(default=604800)  # 1 week in seconds
     finished = fields.BooleanField(default=False)
-    vote_ladder_id = fields.OneToOneField("models.GuildVoteLadder")
+    vote_ladder_id = fields.ForeignKeyField("models.GuildVoteLadder", related_name="votes")
 
 
 # Staff Tables

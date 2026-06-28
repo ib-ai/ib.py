@@ -636,7 +636,7 @@ class Moderation(commands.Cog):
         self.active[punishment.punishment_id] = task
         task.add_done_callback(self.removal_callback(punishment.punishment_id))
         await ctx.send(
-            f'Punishment expiry set for {format_dt(terminus)} ({format_dt(terminus, "R")}).'
+            f"Punishment expiry set for {format_dt(terminus)} ({format_dt(terminus, 'R')})."
         )
 
     @commands.hybrid_command()
