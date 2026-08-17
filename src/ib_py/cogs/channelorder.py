@@ -56,6 +56,7 @@ class ChannelOrder(commands.Cog):
         return embed
 
     @commands.hybrid_group(aliases=["co"])
+    @commands.has_permissions(kick_members=True)
     async def channelorder(self, ctx: commands.Context):
         """
         Commands for discord channel arrangement within categories.
@@ -93,7 +94,7 @@ class ChannelOrder(commands.Cog):
         await ctx.reply(msg, embed=embed)
 
     @channelorder.command(aliases=["r"])
-    @commands.has_permissions(manage_channels=True)
+    @commands.has_permissions(kick_members=True)
     async def rollback(self, ctx: commands.Context, *, category: ChannelCategory):
         """
         Rollback channels in a category to the saved snapshot order.
@@ -153,7 +154,7 @@ class ChannelOrder(commands.Cog):
         )
 
     @channelorder.command(name="view")
-    @commands.has_permissions(manage_channels=True)
+    @commands.has_permissions(kick_members=True)
     async def list_snapshot(self, ctx: commands.Context, *, category: ChannelCategory):
         """
         List the stored snapshot for a given category (by ID or name).

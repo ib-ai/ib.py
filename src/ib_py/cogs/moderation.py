@@ -5,6 +5,7 @@ from datetime import timedelta
 from typing import Optional
 
 import discord
+from discord import app_commands
 from discord.app_commands import describe
 from discord.ext import commands
 from discord.utils import format_dt
@@ -40,6 +41,18 @@ revocation_format = {
     PunishmentType.UNKNOWN: UNKNOWN,
 }
 
+APPEALS_SERVER_INVITE = "https://discord.gg/qSdu3Z4JfJ"
+REJOIN_SERVER_INVITE = "https://discord.gg/ibo"
+
+MESSAGE_DELETE_WINDOW = timedelta(hours=1)
+
+BAN_REASON_PRESETS: Mapping[str, str] = {
+    "compromised": "Account compromised.",
+    "r5": "Rule 5. Academic Dishonesty is strictly prohibited.",
+    "banevasion": "Ban evasion is strictly prohibited.",
+    "spam": "Spam or unsolicited advertising is not allowed.",
+    "nsfw": "Rule 4. Posting NSFW content in violation of server rules.",
+}
 
 reasonflags: Mapping[str, Callable] = {}
 
@@ -60,12 +73,12 @@ def redact(reason: str) -> tuple[str, bool]:
 
 @reasonflag("-r5")
 def rule_5(reason: str) -> tuple[str, bool]:
-    return "Rule 5. Academic Dishonesty is strictly prohibited.", True
+    return "Rule 5. Academic Dishonesty is strictly prohibited.", False
 
 
 @reasonflag("-banevasion")
 def ban_evasion(reason: str) -> tuple[str, bool]:
-    return "Ban evasion is strictly prohibited.", True
+    return "Ban evasion is strictly prohibited.", False
 
 
 def punishment_message(punishment: StaffPunishment, redact: bool):
@@ -76,12 +89,31 @@ def punishment_message(punishment: StaffPunishment, redact: bool):
         user_mention = "[REDACTED]"
         user_display = "[REDACTED]"
         user_id = "[REDACTED]"
+
+    notified_line = "Yes :white_check_mark:" if punishment.user_notified else "No :x:"
     return (
         f"**Case: #{punishment.punishment_id} | {punishment_format[punishment.punishment_type]}**\n"
         + f"**Offender: **{user_mention} (User: {user_display}, ID: {user_id})\n"
         + f"**Moderator: **{punishment.staff_display} (ID: {punishment.staff_id})\n"
         + f"**Reason: **{punishment.reason}"
+        + f"**User notified: **{notified_line}"
     )
+
+
+def _reason_autocomplete_choices(
+    current: str, presets: Mapping[str, str]
+) -> list[app_commands.Choice[str]]:
+    current_lower = current.lower()
+    choices = [
+        app_commands.Choice(name=f"{label} \u2014 {text}", value=text)
+        for label, text in presets.items()
+        if current_lower in text.lower() or current_lower in label.lower()
+    ]
+
+    # let typed text through as its own choice so staff can select what they typed if preset not matched
+    if current and not any(choice.value == current for choice in choices):
+        choices.insert(0, app_commands.Choice(name=current, value=current))
+    return choices[:25]
 
 
 class Moderation(commands.Cog):
@@ -244,6 +276,10 @@ class Moderation(commands.Cog):
         if not public_log and not internal_log:
             return  # nowhere to publish
 
+        # if bot itself performed underlying action, don't double log it
+        if entry.user and entry.user.id == self.bot.user.id:
+            return
+
         reason, redact = self.parse_reason_redact(entry.reason or "")
         offender = (
             entry.target
@@ -259,6 +295,7 @@ class Moderation(commands.Cog):
             staff_id=entry.user.id,
             reason=reason,
             redacted=redact,
+            user_notified=False,
         )
 
         if not reason:
@@ -279,6 +316,65 @@ class Moderation(commands.Cog):
             message = await channel.send(log_message)
             punishment.message_id = message.id
             await punishment.save()
+
+    async def create_and_publish_punishment(
+        self,
+        *,
+        punishment_type: PunishmentType,
+        guild: discord.Guild,
+        offender: discord.abc.User,
+        moderator: discord.abc.User,
+        reason: str,
+        user_notified: bool,
+    ) -> StaffPunishment:
+        """
+        used by slash command-driven punishments where the bot itself performs the action, rather than relying on audit log entries.
+        publish_punishment_log() will see the resulting audit log entry but skip re-publishing it, since entry.user will be the bot.
+        """
+        guild_data = await get_guild_data(guild_id=guild.id)
+
+        parsed_reason, redact = self.parse_reason_redact(reason or "")
+
+        punishment = await StaffPunishment.create(
+            punishment_type=punishment_type,
+            guild_id=guild.id,
+            user_display=f"{offender.name}",
+            user_id=offender.id,
+            staff_display=f"{moderator.name}",
+            staff_id=moderator.id,
+            reason=parsed_reason,
+            redacted=redact,
+            user_notified=user_notified,
+        )
+
+        if not parsed_reason:
+            prefix = (guild_data.prefix if guild_data else None) or config.prefix
+            punishment.reason = f"Use `{prefix}reason {punishment.punishment_id} <reason>` to specify a reason."
+            await punishment.save()
+
+        if not guild_data:
+            return punishment
+
+        internal_log = guild_data.modlog_staff_id
+        public_log = guild_data.modlog_id
+
+        if internal_log:
+            log_message = punishment_message(punishment, redact=False)
+            channel = self.bot.get_channel(internal_log)
+            if channel:
+                message_staff = await channel.send(log_message)
+                punishment.message_staff_id = message_staff.id
+                await punishment.save()
+
+        if public_log:
+            log_message = punishment_message(punishment, redact=True)
+            channel = self.bot.get_channel(public_log)
+            if channel:
+                message = await channel.send(log_message)
+                punishment.message_id = message.id
+                await punishment.save()
+
+        return punishment
 
     async def publish_revocation_log(
         self, punishment_type: PunishmentType, entry: discord.AuditLogEntry
@@ -328,6 +424,41 @@ class Moderation(commands.Cog):
                 return updated(reason)
         return reason, False
 
+    @staticmethod
+    async def _try_dm(user: discord.abc.User, content: str) -> bool:
+        # best-effort DM, returns whether it was actually delivered.
+        try:
+            await user.send(content)
+            return True
+        except (discord.Forbidden, discord.HTTPException):
+            return False
+
+    @staticmethod
+    async def _purge_recent_messages(
+        guild: discord.Guild, user_id: int, window: timedelta
+    ) -> int:
+        cutoff = discord.utils.utcnow() - window
+        deleted_count = 0
+
+        for channel in guild.text_channels:
+            perms = channel.permissions_for(guild.me)
+            if not perms.read_message_history or not perms.manage_messages:
+                continue  # cannot read or delete messages in this channel
+
+            try:
+                deleted = await channel.purge(
+                    after=cutoff,
+                    check=lambda m: m.author.id == user_id,
+                    bulk=True,
+                )
+                deleted_count += len(deleted)
+            except discord.Forbidden:
+                continue
+            except discord.HTTPException:
+                continue
+
+        return deleted_count
+
     @commands.Cog.listener()
     async def on_ready(self):
         """Called when the bot is ready. Ensures initialization on bot startup."""
@@ -342,8 +473,6 @@ class Moderation(commands.Cog):
         if entry.action == discord.AuditLogAction.kick:
             await self.publish_punishment_log(PunishmentType.KICK, entry)
         elif entry.action == discord.AuditLogAction.member_update:
-            return  # don't use timeouts as of now
-
             if entry.user.bot:
                 return  # ignore bot actions
 
@@ -584,6 +713,7 @@ class Moderation(commands.Cog):
         await member_roles.save()
 
     @commands.hybrid_command()
+    @commands.has_permissions(ban_members=True)
     @describe(user="User to ban", reason="Reason for ban")
     async def blacklist(
         self,
@@ -606,6 +736,135 @@ class Moderation(commands.Cog):
             await ctx.send(f"Banned {user}.")
             return
         await ctx.send(f"Banned {user} for `{reason}`.")
+
+    @commands.hybrid_command(name="ban", description="Ban a user from the server.")
+    @describe(
+        user="The user to ban (ID or mention).",
+        reason="Reason for the ban. Start typing for suggestions.",
+    )
+    @commands.has_permissions(ban_members=True)
+    async def ban(
+        self,
+        ctx: commands.Context,
+        user: discord.User,
+        *,
+        reason: str,
+    ):
+        await ctx.defer(ephemeral=True)
+
+        guild = ctx.guild
+        if guild is None:
+            await ctx.send("This command can only be used in a server.")
+            return
+
+        existing_member = guild.get_member(user.id)
+        if existing_member is not None:
+            top_role = guild.me.top_role
+            if existing_member.top_role >= top_role and guild.owner_id != ctx.author.id:
+                await ctx.send(
+                    "I cannot ban this user because they have a higher or equal role than me."
+                )
+                return
+
+        dm_content = (
+            f"You have been banned from **{guild.name}**.\n"
+            f"**Reason:** {reason}\n\n"
+            f"If you believe this was a mistake, you may appeal here: {APPEALS_SERVER_INVITE}"
+        )
+        notified = await self._try_dm(user, dm_content)
+
+        try:
+            await guild.ban(
+                user,
+                reason=reason,
+                delete_message_seconds=int(MESSAGE_DELETE_WINDOW.total_seconds()),
+            )
+        except discord.Forbidden:
+            await ctx.send("I don't have permission to ban this user.")
+            return
+        except discord.HTTPException as exc:
+            await ctx.send(f"Failed to ban this user: {exc}")
+            return
+
+        await self.create_and_publish_punishment(
+            punishment_type=PunishmentType.BAN,
+            guild=guild,
+            offender=user,
+            moderator=ctx.author,
+            reason=reason,
+            user_notified=notified,
+        )
+
+        await ctx.send(
+            f"Banned {user.mention} (`{user.id}`)."
+            + ("User notified." if notified else "\n\u26a0\ufe0f Could not DM the user.")
+        )
+
+    @ban.autocomplete("reason")
+    async def ban_reason_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
+        return _reason_autocomplete_choices(current, BAN_REASON_PRESETS)
+
+    @commands.hybrid_command(name="kick", description="Kick a user from the server.")
+    @describe(
+        user="The user to kick (ID or mention).",
+        reason="Reason for the kick. Start typing for suggestions.",
+    )
+    @commands.has_permissions(kick_members=True)
+    async def kick(
+        self,
+        ctx: commands.Context,
+        user: discord.User,
+        *,
+        reason: str,
+    ):
+        await ctx.defer(ephemeral=True)
+
+        guild = ctx.guild
+        if guild is None:
+            await ctx.send("This command can only be used in a server.")
+            return
+
+        member = guild.get_member(user.id)
+        if member is None:
+            await ctx.send("That user is not in the server.")
+            return
+
+        top_role = guild.me.top_role
+        if member.top_role >= top_role and guild.owner_id != ctx.author.id:
+            await ctx.send("I can't kick this user due to role hierarchy.")
+            return
+
+        dm_content = (
+            f"You have been kicked from **{guild.name}**.\n"
+            f"**Reason**: {reason}\n\n"
+            f"You're welcome to rejoin here: {REJOIN_SERVER_INVITE}"
+        )
+        notified = await self._try_dm(user, dm_content)
+
+        try:
+            await guild.kick(user, reason=reason)
+        except discord.Forbidden:
+            await ctx.send("I don't have permission to kick this user.")
+            return
+        except discord.HTTPException as exc:
+            await ctx.send(f"Failed to kick this user: {exc}")
+            return
+
+        await self.create_and_publish_punishment(
+            punishment_type=PunishmentType.KICK,
+            guild=guild,
+            offender=user,
+            moderator=ctx.author,
+            reason=reason,
+            user_notified=notified,
+        )
+
+        await ctx.send(
+            f"Kicked {user.mention} (`{user.id}`)."
+            + ("User notified." if notified else "\n\u26a0\ufe0f Could not DM the user.")
+        )
 
     @commands.hybrid_command()
     async def expire(
@@ -640,6 +899,7 @@ class Moderation(commands.Cog):
         )
 
     @commands.hybrid_command()
+    @commands.has_permissions(kick_members=True)
     async def history(self, ctx: commands.Context, user: discord.User):
         """
         Display a user's punishment history.
@@ -680,6 +940,7 @@ class Moderation(commands.Cog):
         await ctx.send(content)
 
     @commands.hybrid_command()
+    @commands.has_permissions(expel_members=True)
     async def note(
         self, ctx: commands.Context, user: discord.User, *, note: Optional[str] = None
     ):
@@ -696,7 +957,7 @@ class Moderation(commands.Cog):
             author_display = author.name if author else UNKNOWN
             time_display = format_dt(note.timestamp, "d") if note.timestamp else UNKNOWN
             embed.add_field(
-                name=f"Entry by {author_display} (on {time_display}):",
+                name=f"#{note.note_id} — Entry by {author_display} (on {time_display}):",
                 value=note.note,
                 inline=False,
             )
@@ -704,7 +965,69 @@ class Moderation(commands.Cog):
             embed.description = f"{user.mention} has no notes."
         await ctx.send(embed=embed)
 
+    @commands.hybrid_command()
+    @commands.has_permissions(administrator=True)
+    async def delnote(self, ctx: commands.Context, note_id: int):
+        """
+        Delete a staff note by its ID. Administrator only.
+        """
+        note = await StaffNote.filter(note_id=note_id).get_or_none()
+        if not note:
+            await ctx.send(f"Note #{note_id} does not exist.")
+            return
+
+        await note.delete()
+        await ctx.send(f"Note #{note_id} deleted.")
+
+    @delnote.error
+    async def delnote_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.MissingPermissions):
+            await ctx.send("You need administrator permissions to delete notes.")
+            return
+        raise error
+
+    @commands.hybrid_command()
+    @commands.has_permissions(expell_members=True)
+    @describe(user="User to warn", reason="Reason for the warning")
+    async def warn(
+        self,
+        ctx: commands.Context,
+        user: discord.User,
+        *,
+        reason: str,
+    ):
+        """
+        Warn a user.
+        """
+        dm_content = f"You have been warned in **{ctx.guild.name}**.\n**Reason:** {reason}"
+        notified = await self._try_dm(user, dm_content)
+
+        await self.create_and_publish_punishment(
+            punishment_type=PunishmentType.WARN,
+            guild=ctx.guild,
+            offender=user,
+            moderator=ctx.author,
+            reason=reason,
+            user_notified=notified,
+        )
+
+        await ctx.send(
+            f"Warned {user.mention} (`{user.id}`)."
+            + ("User notified." if notified else "\n\u26a0\ufe0f Could not DM the user.")
+        )
+
+    @warn.error
+    async def warn_error(self, ctx: commands.Context, error: commands.CommandError):
+        if (
+            isinstance(error, commands.MissingRequiredArgument)
+            and error.param.name == "reason"
+        ):
+            await ctx.send("You need to provide a reason: `&warn <user> <reason>`.")
+            return
+        raise error
+
     @commands.group(invoke_without_command=True)
+    @commands.has_permissions(expel_members=True)
     async def purge(self, ctx: commands.Context):
         """
         Commands for bulk deletion.
@@ -763,6 +1086,7 @@ class Moderation(commands.Cog):
         await ctx.send(f"Deleted reactions to {message_id} with emoji {emoji}.")
 
     @commands.hybrid_command()
+    @commands.has_permissions(kick_members=True)
     async def reason(self, ctx: commands.Context, case_number: int, *, reason: str):
         """
         Set a reason for a punishment case.

@@ -33,6 +33,7 @@ class Updates(commands.Cog):
     cog_check = cogify(staff_command())
 
     @commands.hybrid_group()
+    @commands.has_permissions(kick_members=True)
     async def update(self, ctx: commands.Context):
         """
         Commands for handling updates.

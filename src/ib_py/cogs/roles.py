@@ -16,6 +16,7 @@ class Roles(commands.Cog):
     cog_check = cogify(admin_command())
 
     @commands.hybrid_command()
+    @commands.has_permissions(kick_members=True)
     async def giverole(
         self, ctx: commands.Context, existing_role: discord.Role, new_role: discord.Role
     ):
