@@ -16,7 +16,9 @@ from ..db.cached import get_guild_data
 from ..db.models import MemberRole, PunishmentType, StaffNote, StaffPunishment
 from ..utils.commands import available_subcommands
 from ..utils.converters import DatetimeConverter
-from ..utils.time import long_sleep_until, parse_time
+from ..utils.time import long_sleep_until
+
+CHAT_MOD_CHANNEL_ID = 1530943314386485428
 
 config = IBPyConfig()
 config.requires("prefix", "sticky_roles")
@@ -474,61 +476,48 @@ class Moderation(commands.Cog):
             await self.publish_punishment_log(PunishmentType.KICK, entry)
         elif entry.action == discord.AuditLogAction.member_update:
             if entry.user.bot:
-                return  # ignore bot actions
+                return  # already handled via create_and_publish_punishment
 
-            if not hasattr(entry.changes, "timed_out_until"):
-                return  # not a timeout change
+            if not hasattr(entry.after, "timed_out_until"):
+                return  # not a timeout-related change
 
             if not entry.after.timed_out_until:
-                # timeout removed
+                # timeout removed/expired
                 await self.publish_revocation_log(PunishmentType.TIMEOUT, entry)
                 return
 
-            guild_data = await get_guild_data(guild_id=entry.guild.id)
-            if not guild_data or not guild_data.modlog_staff_id:
-                if guild_data.logs_id:  # try bot log as fallback
-                    channel = self.bot.get_channel(guild_data.logs_id)
-                    await channel.send(
-                        entry.user.mention
-                        + " there is no staff log channel set for this server. Please set one up to use timeouts as punishments."
-                    )
-                return  # no log channel set
-            staff_modlog = self.bot.get_channel(guild_data.modlog_staff_id)
+            # timeout applied via native Discord UI
+            reason = entry.reason or "No reason provided."
+            dm_content = (
+                f"You have been timed out in **{entry.guild.name}** until "
+                f"{format_dt(entry.after.timed_out_until, 'F')} "
+                f"({format_dt(entry.after.timed_out_until, 'R')}).\n"
+                f"**Reason:** {reason}"
+            )
+            notified = await self._try_dm(entry.target, dm_content)
 
-            # process reason string
-            if not entry.reason:
-                await staff_modlog.send(
-                    entry.user.mention + " no duration provided in the timeout reason."
-                )
-                await entry.target.timeout(None, reason="No duration provided.")
-                return
+            await self.publish_punishment_log(PunishmentType.TIMEOUT, entry)
 
-            try:
-                tokens = entry.reason.split()
-                duration = tokens[0]
-                dt = await parse_time(duration)
-            except commands.BadArgument:
-                await staff_modlog.send(
-                    entry.user.mention + " invalid duration provided in the timeout reason."
-                )
-                await entry.target.timeout(None, reason="Invalid duration provided.")
-                return
-
-            if dt - timezone.now() > timedelta(days=28):
-                await staff_modlog.send(
-                    entry.user.mention + " timeout duration exceeds maximum of 28 days."
-                )
-                await entry.target.timeout(
-                    None, reason="Timeout duration exceeds maximum of 28 days."
-                )
-                return
-
-            await entry.target.timeout(
-                dt, reason=" ".join(tokens[1:]) if len(tokens) > 1 else "No reason provided."
+            status = (
+                "was successfully DMed the reason"
+                if notified
+                else "could **not** be DMed (DMs closed or blocked the bot)"
+            )
+            staff_message = (
+                f"{entry.user.mention} heads up — {entry.target.mention} {status} "
+                f"regarding their timeout."
             )
 
-            entry.reason = " ".join(tokens[1:])  # remove duration from reason
-            await self.publish_punishment_log(PunishmentType.TIMEOUT, entry)
+            guild_data = await get_guild_data(guild_id=entry.guild.id)
+            staff_channel_ids = []
+            if guild_data and guild_data.modlog_staff_id:
+                staff_channel_ids.append(guild_data.modlog_staff_id)
+            staff_channel_ids.append(CHAT_MOD_CHANNEL_ID)
+
+            for channel_id in set(staff_channel_ids):
+                channel = self.bot.get_channel(channel_id)
+                if channel:
+                    await channel.send(staff_message)
         elif entry.action == discord.AuditLogAction.ban:
             await self.publish_punishment_log(PunishmentType.BAN, entry)
         elif entry.action == discord.AuditLogAction.unban:
@@ -750,6 +739,9 @@ class Moderation(commands.Cog):
         *,
         reason: str,
     ):
+        """
+        Ban a user from the server.
+        """
         await ctx.defer(ephemeral=True)
 
         guild = ctx.guild
@@ -819,6 +811,8 @@ class Moderation(commands.Cog):
         *,
         reason: str,
     ):
+        """
+        Kick a user from the server."""
         await ctx.defer(ephemeral=True)
 
         guild = ctx.guild
@@ -940,7 +934,7 @@ class Moderation(commands.Cog):
         await ctx.send(content)
 
     @commands.hybrid_command()
-    @commands.has_permissions(expel_members=True)
+    @commands.has_permissions(moderate_members=True)
     async def note(
         self, ctx: commands.Context, user: discord.User, *, note: Optional[str] = None
     ):
@@ -987,7 +981,7 @@ class Moderation(commands.Cog):
         raise error
 
     @commands.hybrid_command()
-    @commands.has_permissions(expell_members=True)
+    @commands.has_permissions(moderate_members=True)
     @describe(user="User to warn", reason="Reason for the warning")
     async def warn(
         self,
@@ -1027,7 +1021,7 @@ class Moderation(commands.Cog):
         raise error
 
     @commands.group(invoke_without_command=True)
-    @commands.has_permissions(expel_members=True)
+    @commands.has_permissions(moderate_members=True)
     async def purge(self, ctx: commands.Context):
         """
         Commands for bulk deletion.

@@ -116,6 +116,9 @@ class Tickets(commands.Cog):
     @commands.hybrid_command()
     @commands.has_permissions(administrator=True)
     async def ticketpanel(self, ctx: commands.Context):
+        """
+        Send the ticket panel for bug reports and feature requests.
+        """
         embed = discord.Embed(
             title="Bug Reports & Feature Requests",
             description=(

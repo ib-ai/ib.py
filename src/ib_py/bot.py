@@ -22,7 +22,7 @@ INITIAL_COGS = (
     "filter",
     "guildconfig",
     "help",
-    "helper",
+    # "helper",
     "moderation",
     "monitor",
     "public",
