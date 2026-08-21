@@ -1,3 +1,6 @@
+import functools
+from json import dumps, loads
+
 from tortoise import fields, migrations
 from tortoise.contrib.postgres.fields import ArrayField
 from tortoise.fields.base import OnDelete
@@ -134,7 +137,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("vote_ladder_label", fields.CharField(max_length=256)),
-                ("vote_ladder_roles", ArrayField(element_type="INT")),
+                ("vote_ladder_roles", ArrayField(element_type="BIGINT")),
                 ("channel_id", fields.BigIntField()),
                 ("threshold", fields.IntField()),
                 ("minimum", fields.IntField()),
@@ -154,8 +157,30 @@ class Migration(migrations.Migration):
                 ),
                 ("message_id", fields.BigIntField()),
                 ("message", fields.TextField(unique=False)),
-                ("positive", fields.IntField(default=0)),
-                ("negative", fields.IntField(default=0)),
+                (
+                    "options",
+                    fields.JSONField(
+                        default=["Yes", "No"],
+                        encoder=functools.partial(dumps, separators=(",", ":")),
+                        decoder=loads,
+                    ),
+                ),
+                (
+                    "totals",
+                    fields.JSONField(
+                        default=[0, 0],
+                        encoder=functools.partial(dumps, separators=(",", ":")),
+                        decoder=loads,
+                    ),
+                ),
+                (
+                    "voters",
+                    fields.JSONField(
+                        default=dict,
+                        encoder=functools.partial(dumps, separators=(",", ":")),
+                        decoder=loads,
+                    ),
+                ),
                 ("expiry", fields.IntField(default=604800)),
                 (
                     "finished",
