@@ -92,13 +92,13 @@ def punishment_message(punishment: StaffPunishment, redact: bool):
         user_display = "[REDACTED]"
         user_id = "[REDACTED]"
 
-    notified_line = "Yes :white_check_mark:" if punishment.user_notified else "No :x:"
+    # notified_line = "Yes :white_check_mark:" if punishment.user_notified else "No :x:"
     return (
         f"**Case: #{punishment.punishment_id} | {punishment_format[punishment.punishment_type]}**\n"
         + f"**Offender: **{user_mention} (User: {user_display}, ID: {user_id})\n"
         + f"**Moderator: **{punishment.staff_display} (ID: {punishment.staff_id})\n"
         + f"**Reason: **{punishment.reason}"
-        + f"**User notified: **{notified_line}"
+        # + f"**User notified: **{notified_line}"
     )
 
 
