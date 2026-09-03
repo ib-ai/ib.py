@@ -69,6 +69,7 @@ class Monitor(commands.Cog):
     cog_check = cogify(staff_command())
 
     @commands.hybrid_group()
+    @commands.has_permissions(kick_members=True)
     async def monitor(self, ctx: commands.Context):
         """
         Commands for monitoring problematic message patterns and users.
@@ -423,6 +424,7 @@ class Monitor(commands.Cog):
             logger.debug(f"Removed all patterns from monitor group {name}.")
 
     @group.command(name="list")
+    @commands.has_permissions(kick_members=True)
     async def group_list(self, ctx: commands.Context):
         """
         List of monitored message pattern groups.

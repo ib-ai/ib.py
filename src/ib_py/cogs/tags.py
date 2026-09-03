@@ -60,6 +60,7 @@ class Tags(commands.Cog):
         await available_subcommands(ctx)
 
     @tag.command(name="create", aliases=["add"])
+    @commands.has_permissions(kick_members=True)
     async def tag_create(self, ctx: commands.Context, trigger: RegexConverter, output: str):
         """
         Create a tag.
@@ -87,6 +88,7 @@ class Tags(commands.Cog):
         await ctx.send(f"Created tag `{trigger}` with output `{output}`.")
 
     @tag.command(name="delete", aliases=["remove"])
+    @commands.has_permissions(kick_members=True)
     async def tag_delete(self, ctx: commands.Context, trigger: RegexConverter):
         """
         Delete a tag.
@@ -122,6 +124,7 @@ class Tags(commands.Cog):
         await ctx.send(embed=tag_embed, view=tag_view)
 
     @tag.command(name="toggle")
+    @commands.has_permissions(kick_members=True)
     async def tag_toggle(self, ctx: commands.Context, trigger: RegexConverter):
         """
         Toggle if a tag is active.
@@ -163,6 +166,7 @@ class Tags(commands.Cog):
         )
 
     @reply.command(name="toggle")
+    @commands.has_permissions(kick_members=True)
     async def reply_toggle(self, ctx: commands.Context, channel: discord.TextChannel):
         """
         Toggle if bot replies are disabled for specified channel.

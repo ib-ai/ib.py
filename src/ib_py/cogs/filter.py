@@ -74,6 +74,7 @@ class Filter(commands.Cog):
     cog_check = cogify(staff_command())
 
     @commands.hybrid_group()
+    @commands.has_permissions(kick_members=True)
     async def filter(self, ctx: commands.Context):
         """
         Commands for filtering unwanted message patterns.

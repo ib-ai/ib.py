@@ -21,14 +21,15 @@ INITIAL_COGS = (
     "dev",
     "filter",
     "guildconfig",
-    # "help",
-    "helper",
+    "help",
+    # "helper",
     "moderation",
     "monitor",
     "public",
     "reminder",
     "roles",
     "tags",
+    "tickets",
     "updates",
     "voting",
 )
@@ -58,6 +59,7 @@ class IBpy(commands.Bot):
             except commands.errors.ExtensionFailed as e:
                 logger.error(e)
         logger.info("Loaded all cogs.")
+        await self.tree.sync()
 
     async def on_ready(self):
         await self.change_presence(

@@ -477,7 +477,11 @@ class Voting(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
+    @commands.has_permissions(manage_messages=True)
     async def vote(self, ctx: commands.Context, ladder_name: str, *, text: str):
+        """
+        Start a vote in a voteladder.
+        """
         # start a new yes/no vote on a ladder. use `voteoptions` to chnage to custom options
         ladder = await GuildVoteLadder.get_or_none(vote_ladder_label=ladder_name)
 
@@ -525,7 +529,11 @@ class Voting(commands.Cog):
         await ctx.send(confirmation)
 
     @commands.command()
+    @commands.has_permissions(manage_messages=True)
     async def voteoptions(self, ctx, ladder_name: str, vote_id: int, *options):
+        """
+        Change the options of an existing vote and reset its timer.
+        """
         # replace the options on an existing, unfinished vote and reset its timer.
         vote = await GuildVote.get_or_none(vote_id=vote_id).prefetch_related("vote_ladder_id")
 
