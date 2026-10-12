@@ -102,6 +102,20 @@ def punishment_message(punishment: StaffPunishment, redact: bool):
     )
 
 
+async def _edit_modlog_message(self, channel_id, message_id, content) -> bool:
+    channel = self.bot.get_channel(channel_id) if channel_id else None
+    if not channel or not message_id:
+        return False
+    try:
+        message = await channel.fetch_message(message_id)
+        if message.author.id != self.bot.user.id:
+            return False  # posted by the old bot
+        await message.edit(content=content)
+        return True
+    except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+        return False
+
+
 def _reason_autocomplete_choices(
     current: str, presets: Mapping[str, str]
 ) -> list[app_commands.Choice[str]]:
@@ -1099,29 +1113,26 @@ class Moderation(commands.Cog):
         punishment.redacted = redact
         await punishment.save()
 
-        new_message = punishment_message(punishment, redact=True)
         guild_data = await get_guild_data(guild_id=ctx.guild.id)
-        modlog = self.bot.get_channel(guild_data.modlog_id)
-        if modlog:
-            try:
-                modlog_message = await modlog.fetch_message(punishment.message_id)
-                await modlog_message.edit(content=new_message)
-            except discord.NotFound:
-                pass  # message was deleted
-
-        new_message = punishment_message(punishment, redact=False)
-        guild_data = await get_guild_data(guild_id=ctx.guild.id)
-        modlog_staff = self.bot.get_channel(guild_data.modlog_staff_id)
-        if modlog_staff:
-            try:
-                modlog_staff_message = await modlog_staff.fetch_message(
-                    punishment.message_staff_id
-                )
-                await modlog_staff_message.edit(content=new_message)
-            except discord.NotFound:
-                pass  # message was deleted
-
-        await ctx.send(f'Case #{case_number} reason updated: "{reason}"')
+        ok = True
+        if guild_data:
+            ok_public = await self._edit_modlog_message(
+                guild_data.modlog_id,
+                punishment.message_id,
+                punishment_message(punishment, redact=True),
+            )
+            ok_staff = await self._edit_modlog_message(
+                guild_data.modlog_staff_id,
+                punishment.message_staff_id,
+                punishment_message(punishment, redact=False),
+            )
+            ok = ok_public and ok_staff
+        note = (
+            ""
+            if ok
+            else "\n-# Some mod log messages couldn't be edited (cases imported from the old bot). `&lookup` shows the new reason."
+        )
+        await ctx.send(f'Case #{case_number} reason updated: "{reason}"{note}')
 
 
 async def setup(bot: commands.Bot):
