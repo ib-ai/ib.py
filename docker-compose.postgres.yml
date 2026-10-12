@@ -2,7 +2,7 @@ services:
   # Can comment out the following when working in development instead of rerunning the docker environment again
 
   bot:
-     image: ib.ai
+     image: ib.py
      restart: on-failure:3
      build:
        context: ./
@@ -19,7 +19,7 @@ services:
     volumes:
       - postgre-data:/data
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       - POSTGRES_PASSWORD=password
 
