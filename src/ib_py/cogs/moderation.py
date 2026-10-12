@@ -102,20 +102,6 @@ def punishment_message(punishment: StaffPunishment, redact: bool):
     )
 
 
-async def _edit_modlog_message(self, channel_id, message_id, content) -> bool:
-    channel = self.bot.get_channel(channel_id) if channel_id else None
-    if not channel or not message_id:
-        return False
-    try:
-        message = await channel.fetch_message(message_id)
-        if message.author.id != self.bot.user.id:
-            return False  # posted by the old bot
-        await message.edit(content=content)
-        return True
-    except (discord.NotFound, discord.Forbidden, discord.HTTPException):
-        return False
-
-
 def _reason_autocomplete_choices(
     current: str, presets: Mapping[str, str]
 ) -> list[app_commands.Choice[str]]:
@@ -427,6 +413,19 @@ class Moderation(commands.Cog):
             )
             channel = self.bot.get_channel(public_log)
             await channel.send(log_message)
+
+    async def _edit_modlog_message(self, channel_id, message_id, content) -> bool:
+        channel = self.bot.get_channel(channel_id) if channel_id else None
+        if not channel or not message_id:
+            return False
+        try:
+            message = await channel.fetch_message(message_id)
+            if message.author.id != self.bot.user.id:
+                return False  # posted by the old bot
+            await message.edit(content=content)
+            return True
+        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+            return False
 
     @staticmethod
     def parse_reason_redact(reason: str):
