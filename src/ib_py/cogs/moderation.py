@@ -778,10 +778,9 @@ class Moderation(commands.Cog):
         )
         notified = await self._try_dm(user, dm_content)
 
-        if reasonflags.get(reason.split()[-1], None):
-            reason, redact = self.parse_reason_redact(reason)
-        else:
-            redact = False
+        raw_reason = reason  # keep any -redact flag for the punishment record
+        if reason.split() and reasonflags.get(reason.split()[-1], None):
+            reason, _ = self.parse_reason_redact(reason)
 
         try:
             await guild.ban(
@@ -801,8 +800,8 @@ class Moderation(commands.Cog):
             guild=guild,
             offender=user,
             moderator=ctx.author,
-            reason=reason,
-            redact=redact,
+            reason=raw_reason,
+            user_notified=notified,
         )
 
         await ctx.send(
@@ -870,6 +869,7 @@ class Moderation(commands.Cog):
             offender=user,
             moderator=ctx.author,
             reason=reason,
+            user_notified=notified,
         )
 
         await ctx.send(
