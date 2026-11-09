@@ -61,8 +61,18 @@ class Monitor(commands.Cog):
                 for pattern in await get_all_monitor_messages()
                 if not pattern.disabled
             ]
-            for pattern in monitor_messages:
-                if re.search(pattern, message.content, re.IGNORECASE):
+            for pattern in await monitor_messages:
+                if pattern.disabled:
+                    continue
+                try:
+                    matched = re.search(pattern.message, message.content, re.IGNORECASE)
+                except re.error as exc:
+                    logger.warning(
+                        f"Monitor pattern {pattern.monitor_message_id} is invalid: {exc}"
+                    )
+                    continue
+                if matched:
+                    logger.debug(f"Monitor pattern {pattern.monitor_message_id} matched.")
                     await log_suspicious_message(guild_data.monitor_message_log_id, message)
                     return
 
