@@ -4,7 +4,7 @@ from discord.ext import commands
 from ..config import IBPyConfig
 
 config = IBPyConfig()
-BUGREPORT_CHANNEL_ID = 1537983881544728737
+BUGREPORT_CHANNEL_ID = 485421626314326016
 
 
 class BugReportModal(discord.ui.Modal, title="Bug Report"):

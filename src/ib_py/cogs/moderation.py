@@ -414,6 +414,19 @@ class Moderation(commands.Cog):
             channel = self.bot.get_channel(public_log)
             await channel.send(log_message)
 
+    async def _edit_modlog_message(self, channel_id, message_id, content) -> bool:
+        channel = self.bot.get_channel(channel_id) if channel_id else None
+        if not channel or not message_id:
+            return False
+        try:
+            message = await channel.fetch_message(message_id)
+            if message.author.id != self.bot.user.id:
+                return False  # posted by the old bot
+            await message.edit(content=content)
+            return True
+        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+            return False
+
     @staticmethod
     def parse_reason_redact(reason: str):
         reason = reason.strip()
@@ -765,10 +778,9 @@ class Moderation(commands.Cog):
         )
         notified = await self._try_dm(user, dm_content)
 
-        if reasonflags.get(reason.split()[-1], None):
-            reason, redact = self.parse_reason_redact(reason)
-        else:
-            redact = False
+        raw_reason = reason  # keep any -redact flag for the punishment record
+        if reason.split() and reasonflags.get(reason.split()[-1], None):
+            reason, _ = self.parse_reason_redact(reason)
 
         try:
             await guild.ban(
@@ -788,8 +800,8 @@ class Moderation(commands.Cog):
             guild=guild,
             offender=user,
             moderator=ctx.author,
-            reason=reason,
-            redact=redact,
+            reason=raw_reason,
+            user_notified=notified,
         )
 
         await ctx.send(
@@ -857,6 +869,7 @@ class Moderation(commands.Cog):
             offender=user,
             moderator=ctx.author,
             reason=reason,
+            user_notified=notified,
         )
 
         await ctx.send(
@@ -1099,29 +1112,26 @@ class Moderation(commands.Cog):
         punishment.redacted = redact
         await punishment.save()
 
-        new_message = punishment_message(punishment, redact=True)
         guild_data = await get_guild_data(guild_id=ctx.guild.id)
-        modlog = self.bot.get_channel(guild_data.modlog_id)
-        if modlog:
-            try:
-                modlog_message = await modlog.fetch_message(punishment.message_id)
-                await modlog_message.edit(content=new_message)
-            except discord.NotFound:
-                pass  # message was deleted
-
-        new_message = punishment_message(punishment, redact=False)
-        guild_data = await get_guild_data(guild_id=ctx.guild.id)
-        modlog_staff = self.bot.get_channel(guild_data.modlog_staff_id)
-        if modlog_staff:
-            try:
-                modlog_staff_message = await modlog_staff.fetch_message(
-                    punishment.message_staff_id
-                )
-                await modlog_staff_message.edit(content=new_message)
-            except discord.NotFound:
-                pass  # message was deleted
-
-        await ctx.send(f'Case #{case_number} reason updated: "{reason}"')
+        ok = True
+        if guild_data:
+            ok_public = await self._edit_modlog_message(
+                guild_data.modlog_id,
+                punishment.message_id,
+                punishment_message(punishment, redact=True),
+            )
+            ok_staff = await self._edit_modlog_message(
+                guild_data.modlog_staff_id,
+                punishment.message_staff_id,
+                punishment_message(punishment, redact=False),
+            )
+            ok = ok_public and ok_staff
+        note = (
+            ""
+            if ok
+            else "\n-# Some mod log messages couldn't be edited (cases imported from the old bot). `&lookup` shows the new reason."
+        )
+        await ctx.send(f'Case #{case_number} reason updated: "{reason}"{note}')
 
 
 async def setup(bot: commands.Bot):

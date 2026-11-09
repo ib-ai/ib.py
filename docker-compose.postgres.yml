@@ -1,14 +1,17 @@
 services:
   # Can comment out the following when working in development instead of rerunning the docker environment again
 
-  # bot:
-  #   image: ib.ai
-  #   restart: on-failure:3
-  #   build:
-  #     context: ./
-  #     dockerfile: Dockerfile
-  #   depends_on:
-  #     - postgredb
+  bot:
+     image: ib.py
+     restart: on-failure:3
+     build:
+       context: ./
+       dockerfile: Dockerfile
+     depends_on:
+       - postgredb
+     volumes:
+        - ./.env:/app/.env:ro
+        - ./config.toml:/app/config.toml:ro
 
   postgredb:
     restart: always
@@ -16,7 +19,7 @@ services:
     volumes:
       - postgre-data:/data
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       - POSTGRES_PASSWORD=password
 
