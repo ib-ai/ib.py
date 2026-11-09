@@ -61,7 +61,7 @@ class Monitor(commands.Cog):
                 for pattern in await get_all_monitor_messages()
                 if not pattern.disabled
             ]
-            for pattern in await monitor_messages:
+            for pattern in monitor_messages:
                 if pattern.disabled:
                     continue
                 try:
