@@ -788,7 +788,7 @@ class Moderation(commands.Cog):
         """
         Ban a user from the server.
         """
-        await ctx.defer(ephemeral=True)
+        await ctx.defer(ephemeral=False)
 
         guild = ctx.guild
         if guild is None:
@@ -845,7 +845,7 @@ class Moderation(commands.Cog):
 
         await ctx.send(
             f"Banned {user.mention} (`{user.id}`)."
-            + ("User notified." if notified else "\n\u26a0\ufe0f Could not DM the user.")
+            + (" User notified." if notified else "\n\u26a0\ufe0f Could not DM the user.")
         )
 
     @ban.autocomplete("reason")
@@ -869,7 +869,7 @@ class Moderation(commands.Cog):
     ):
         """
         Kick a user from the server."""
-        await ctx.defer(ephemeral=True)
+        await ctx.defer(ephemeral=False)
 
         guild = ctx.guild
         if guild is None:
@@ -917,7 +917,7 @@ class Moderation(commands.Cog):
 
         await ctx.send(
             f"Kicked {user.mention} (`{user.id}`)."
-            + ("User notified." if notified else "\n\u26a0\ufe0f Could not DM the user.")
+            + (" User notified." if notified else "\n\u26a0\ufe0f Could not DM the user.")
         )
 
     @commands.hybrid_command()
@@ -1072,7 +1072,7 @@ class Moderation(commands.Cog):
 
         await ctx.send(
             f"Warned {user.mention} (`{user.id}`)."
-            + ("User notified." if notified else "\n\u26a0\ufe0f Could not DM the user.")
+            + (" User notified." if notified else "\n\u26a0\ufe0f Could not DM the user.")
         )
 
     @warn.error
