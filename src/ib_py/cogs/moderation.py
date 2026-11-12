@@ -841,6 +841,7 @@ class Moderation(commands.Cog):
             moderator=ctx.author,
             reason=reason,
             redact=redact,
+            user_notified=notified,
         )
 
         await ctx.send(
@@ -913,6 +914,7 @@ class Moderation(commands.Cog):
             offender=user,
             moderator=ctx.author,
             reason=reason,
+            user_notified=notified,
         )
 
         await ctx.send(
