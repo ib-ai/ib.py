@@ -14,6 +14,7 @@ from tortoise import timezone
 from ..config import IBPyConfig
 from ..db.cached import get_guild_data
 from ..db.models import MemberRole, PunishmentType, StaffNote, StaffPunishment
+from ..utils.checks import is_moderator_member
 from ..utils.commands import available_subcommands
 from ..utils.converters import DatetimeConverter
 from ..utils.time import long_sleep_until
@@ -414,6 +415,19 @@ class Moderation(commands.Cog):
             channel = self.bot.get_channel(public_log)
             await channel.send(log_message)
 
+    async def _edit_modlog_message(self, channel_id, message_id, content) -> bool:
+        channel = self.bot.get_channel(channel_id) if channel_id else None
+        if not channel or not message_id:
+            return False
+        try:
+            message = await channel.fetch_message(message_id)
+            if message.author.id != self.bot.user.id:
+                return False  # posted by the old bot
+            await message.edit(content=content)
+            return True
+        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+            return False
+
     @staticmethod
     def parse_reason_redact(reason: str):
         reason = reason.strip()
@@ -425,6 +439,38 @@ class Moderation(commands.Cog):
             if end_token == flag:
                 return updated(reason)
         return reason, False
+
+    async def _hierarchy_error(
+        self, ctx: commands.Context, target: discord.abc.User
+    ) -> Optional[str]:
+        """
+        Return a message explaining why ctx.author may not act on target, or None if allowed.
+
+        Blocks self-targeting, the server owner, anyone with an equal or higher top role,
+        and (unless the author is an admin) other moderators. Users who are no longer in
+        the server have no roles to compare, so they are allowed.
+        """
+        author = ctx.author
+        if target.id == author.id:
+            return "You can't do this to yourself."
+
+        member = ctx.guild.get_member(target.id)
+        if member is None:
+            return None
+
+        if ctx.guild.owner_id == author.id:
+            return None
+        if ctx.guild.owner_id == member.id:
+            return "You can't do this to the server owner."
+
+        if member.top_role >= author.top_role:
+            return "You can't do this to a user with an equal or higher role than you."
+
+        is_admin = author.guild_permissions.manage_guild
+        if not is_admin and await is_moderator_member(member):
+            return "You can't do this to another moderator."
+
+        return None
 
     @staticmethod
     async def _try_dm(user: discord.abc.User, content: str) -> bool:
@@ -758,6 +804,11 @@ class Moderation(commands.Cog):
                 )
                 return
 
+        blocked = await self._hierarchy_error(ctx, user)
+        if blocked:
+            await ctx.send(blocked)
+            return
+
         dm_content = (
             f"You have been banned from **{guild.name}**.\n"
             f"**Reason:** {reason}\n\n"
@@ -833,6 +884,11 @@ class Moderation(commands.Cog):
         top_role = guild.me.top_role
         if member.top_role >= top_role and guild.owner_id != ctx.author.id:
             await ctx.send("I can't kick this user due to role hierarchy.")
+            return
+
+        blocked = await self._hierarchy_error(ctx, user)
+        if blocked:
+            await ctx.send(blocked)
             return
 
         dm_content = (
@@ -997,6 +1053,11 @@ class Moderation(commands.Cog):
         """
         Warn a user.
         """
+        blocked = await self._hierarchy_error(ctx, user)
+        if blocked:
+            await ctx.send(blocked)
+            return
+
         dm_content = f"You have been warned in **{ctx.guild.name}**.\n**Reason:** {reason}"
         notified = await self._try_dm(user, dm_content)
 
@@ -1099,29 +1160,26 @@ class Moderation(commands.Cog):
         punishment.redacted = redact
         await punishment.save()
 
-        new_message = punishment_message(punishment, redact=True)
         guild_data = await get_guild_data(guild_id=ctx.guild.id)
-        modlog = self.bot.get_channel(guild_data.modlog_id)
-        if modlog:
-            try:
-                modlog_message = await modlog.fetch_message(punishment.message_id)
-                await modlog_message.edit(content=new_message)
-            except discord.NotFound:
-                pass  # message was deleted
-
-        new_message = punishment_message(punishment, redact=False)
-        guild_data = await get_guild_data(guild_id=ctx.guild.id)
-        modlog_staff = self.bot.get_channel(guild_data.modlog_staff_id)
-        if modlog_staff:
-            try:
-                modlog_staff_message = await modlog_staff.fetch_message(
-                    punishment.message_staff_id
-                )
-                await modlog_staff_message.edit(content=new_message)
-            except discord.NotFound:
-                pass  # message was deleted
-
-        await ctx.send(f'Case #{case_number} reason updated: "{reason}"')
+        ok = True
+        if guild_data:
+            ok_public = await self._edit_modlog_message(
+                guild_data.modlog_id,
+                punishment.message_id,
+                punishment_message(punishment, redact=True),
+            )
+            ok_staff = await self._edit_modlog_message(
+                guild_data.modlog_staff_id,
+                punishment.message_staff_id,
+                punishment_message(punishment, redact=False),
+            )
+            ok = ok_public and ok_staff
+        note = (
+            ""
+            if ok
+            else "\n-# Some mod log messages couldn't be edited (cases imported from the old bot). `&lookup` shows the new reason."
+        )
+        await ctx.send(f'Case #{case_number} reason updated: "{reason}"{note}')
 
 
 async def setup(bot: commands.Bot):
