@@ -817,9 +817,7 @@ class Moderation(commands.Cog):
         notified = await self._try_dm(user, dm_content)
 
         if reasonflags.get(reason.split()[-1], None):
-            reason, redact = self.parse_reason_redact(reason)
-        else:
-            redact = False
+            reason = self.parse_reason_redact(reason)
 
         try:
             await guild.ban(
@@ -840,7 +838,6 @@ class Moderation(commands.Cog):
             offender=user,
             moderator=ctx.author,
             reason=reason,
-            redact=redact,
             user_notified=notified,
         )
 
